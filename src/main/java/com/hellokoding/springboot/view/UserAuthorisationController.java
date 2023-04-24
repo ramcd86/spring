@@ -70,6 +70,21 @@ public class UserAuthorisationController {
     @PostMapping("register")
     public ResponseEntity<Object> createNewUser(@RequestBody User user) {
 
+        CompletableFuture<Boolean> userExistsJoin = CompletableFuture.supplyAsync(
+                () -> {
+                    try {
+                        return userManagementService.userExists(user.getEmail());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+        boolean userExists = userExistsJoin.join();
+
+        if (userExists) {
+            return ResponseEntity.badRequest().body("User exists");
+        }
+
         user.setRegistrationDate(String.valueOf(LocalDate.now()));
 
         List<String> failureReasons = new ArrayList<String>();

@@ -120,13 +120,29 @@ public class UserManagementService {
         }
     }
 
+    public boolean userExists(String email) throws SQLException {
+        dbProperties.put("user", Environment.USER);
+        dbProperties.put("password", Environment.PASS);
+        try (Connection conn = DriverManager.getConnection(Environment.DB_URL, dbProperties)) {
+            PreparedStatement statement = conn.prepareStatement("SELECT * FROM users WHERE email = ?");
+            statement.setString(1, email);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public boolean insertUser(User userToInsert) throws SQLException, NoSuchAlgorithmException {
         dbProperties.put("user", Environment.USER);
         dbProperties.put("password", Environment.PASS);
+
         String salt = HashUtils.generateSalt();
         String hash = HashUtils.hashWithSalt(userToInsert.getPassword(), salt);
         String authKey = HashUtils.hashWithSalt(userToInsert.getEmail(), salt);
-        
+
         try (Connection conn = DriverManager.getConnection(Environment.DB_URL, dbProperties)) {
             PreparedStatement statement = conn.prepareStatement(
                     "INSERT INTO users (userName, firstName, lastName, email, hash, salt, authKey, authKeyExpiry, dob, avatar, registrationDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
