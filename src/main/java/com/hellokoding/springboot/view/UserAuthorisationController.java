@@ -46,8 +46,8 @@ public class UserAuthorisationController {
                 throw new RuntimeException(e);
             }
         });
-        boolean userAuthorisationStatus = userIsAuthed.join();
-        return ResponseEntity.ok(userAuthorisationStatus);
+
+        return ResponseEntity.ok(userIsAuthed.join());
     }
 
     @PostMapping("login")
@@ -79,9 +79,7 @@ public class UserAuthorisationController {
                     }
                 });
 
-        boolean userExists = userExistsJoin.join();
-
-        if (userExists) {
+        if (userExistsJoin.join()) {
             return ResponseEntity.badRequest().body("User exists");
         }
 
@@ -114,8 +112,7 @@ public class UserAuthorisationController {
                 }
             });
 
-            boolean userValidlyInserted = userInsertedFuture.join();
-            if (userValidlyInserted) {
+            if (userInsertedFuture.join()) {
                 return ResponseEntity.ok("User inserted.");
             }
         }
