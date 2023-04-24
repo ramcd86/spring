@@ -1,8 +1,7 @@
 package com.hellokoding.springboot.view.userclasses;
 
-import java.time.LocalDate;
-
 public class User {
+
     private String userName;
     private String firstName;
     private String lastName;
@@ -12,7 +11,7 @@ public class User {
     private String authKey;
     private String authKeyExpiry;
     private String avatar;
-    private LocalDate registrationDate = LocalDate.now();
+    private String registrationDate;
 
     public String getAuthKey() {
         return authKey;
@@ -86,14 +85,13 @@ public class User {
         this.dob = dob;
     }
 
-    public LocalDate getRegistrationDate() {
+    public String getRegistrationDate() {
         return registrationDate;
     }
 
-    public void setRegistrationDate(LocalDate registrationDate) {
+    public void setRegistrationDate(String registrationDate) {
         this.registrationDate = registrationDate;
     }
-
 
     @Override
     public String toString() {

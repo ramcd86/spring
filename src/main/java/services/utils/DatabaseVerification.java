@@ -10,10 +10,6 @@ public class DatabaseVerification {
 
     private final Properties info = new Properties();
 
-    public DatabaseVerification() {
-
-    }
-
     public void validateUserTable() throws SQLException {
 
         info.put("user", Environment.USER);

@@ -2,6 +2,7 @@ package com.hellokoding.springboot.view;
 
 import com.hellokoding.springboot.view.userclasses.PublicUserDetails;
 import com.hellokoding.springboot.view.userclasses.User;
+import com.hellokoding.springboot.view.userclasses.UserAuthKey;
 import com.hellokoding.springboot.view.userclasses.UserLoginDetails;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -22,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 
 @Controller
 public class UserAuthorisationController {
+
     private final UserManagementService userManagementService;
 
     public UserAuthorisationController(UserManagementService userManagementService) {
@@ -29,21 +31,37 @@ public class UserAuthorisationController {
     }
 
     @GetMapping({"/", "/register"})
-    public String register(Model model, @RequestParam(value = "name", required = false, defaultValue = "World") String name) {
+    public String register(Model model,
+                           @RequestParam(value = "name", required = false, defaultValue = "World") String name) {
         return "Registration";
     }
 
-    @PostMapping("login")
-    public ResponseEntity<PublicUserDetails> userLogin(@RequestBody UserLoginDetails userLoginDetails) throws Exception {
-        System.out.println(userLoginDetails);
-
-        CompletableFuture<PublicUserDetails> publicUserDetailsCompletableFuture = CompletableFuture.supplyAsync(() -> {
+    @PostMapping("auth")
+    public ResponseEntity<Boolean> authoriseCurrentUser(@RequestBody UserAuthKey userAuthKey)
+            throws Exception {
+        CompletableFuture<Boolean> userIsAuthed = CompletableFuture.supplyAsync(() -> {
             try {
-                return userManagementService.getUser(userLoginDetails);
+                return userManagementService.isAuthKeyValid(userAuthKey);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
+        boolean userAuthorisationStatus = userIsAuthed.join();
+        return ResponseEntity.ok(userAuthorisationStatus);
+    }
+
+    @PostMapping("login")
+    public ResponseEntity<PublicUserDetails> userLogin(@RequestBody UserLoginDetails userLoginDetails)
+            throws Exception {
+
+        CompletableFuture<PublicUserDetails> publicUserDetailsCompletableFuture = CompletableFuture.supplyAsync(
+                () -> {
+                    try {
+                        return userManagementService.getUser(userLoginDetails);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
 
         PublicUserDetails validatedPublicUserDetails = publicUserDetailsCompletableFuture.join();
         return ResponseEntity.ok(validatedPublicUserDetails);
@@ -52,7 +70,7 @@ public class UserAuthorisationController {
     @PostMapping("register")
     public ResponseEntity<Object> createNewUser(@RequestBody User user) {
 
-        user.setRegistrationDate(LocalDate.now());
+        user.setRegistrationDate(String.valueOf(LocalDate.now()));
 
         List<String> failureReasons = new ArrayList<String>();
 
@@ -60,9 +78,13 @@ public class UserAuthorisationController {
             field.setAccessible(true);
             try {
                 Object fieldValue = field.get(user);
-                if (fieldValue == null) {
-                    failureReasons.add("Value of " + field.getName() + " is empty");
+                if (!field.getName().equals("authKey") && !field.getName().equals("authKeyExpiry")
+                        && !field.getName().equals("avatar")) {
+                    if (fieldValue == null) {
+                        failureReasons.add("Value of " + field.getName() + " is empty");
+                    }
                 }
+
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }

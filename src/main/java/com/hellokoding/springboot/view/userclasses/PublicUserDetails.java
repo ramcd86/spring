@@ -1,16 +1,16 @@
 package com.hellokoding.springboot.view.userclasses;
 
 public class PublicUserDetails {
+
     private String userName;
     private String firstName;
     private String lastName;
     private String email;
     private String dob;
     private String registrationDate;
-    private String loginHash;
     private String userAvatar;
     private String authKey;
-
+    
     @Override
     public String toString() {
         return "PublicUserDetails{" +
@@ -20,7 +20,6 @@ public class PublicUserDetails {
                 ", email='" + email + '\'' +
                 ", dob='" + dob + '\'' +
                 ", registrationDate='" + registrationDate + '\'' +
-                ", loginHash='" + loginHash + '\'' +
                 ", userAvatar='" + userAvatar + '\'' +
                 ", authKey='" + authKey + '\'' +
                 '}';
@@ -32,14 +31,6 @@ public class PublicUserDetails {
 
     public void setAuthKey(String authKey) {
         this.authKey = authKey;
-    }
-
-    public String getLoginHash() {
-        return loginHash;
-    }
-
-    public void setLoginHash(String loginHash) {
-        this.loginHash = loginHash;
     }
 
     public String getUserAvatar() {
