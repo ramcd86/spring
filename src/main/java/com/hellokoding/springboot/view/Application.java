@@ -18,6 +18,7 @@ public class Application {
 
         DatabaseVerification dbVerification = new DatabaseVerification();
         dbVerification.validateUserTable();
+        dbVerification.validateStoreTable();
 
     }
 }

@@ -145,7 +145,7 @@ public class UserManagementService {
 
         try (Connection conn = DriverManager.getConnection(Environment.DB_URL, dbProperties)) {
             PreparedStatement statement = conn.prepareStatement(
-                    "INSERT INTO users (userName, firstName, lastName, email, hash, salt, authKey, authKeyExpiry, dob, avatar, registrationDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    "INSERT INTO users (userName, firstName, lastName, email, hash, salt, authKey, authKeyExpiry, dob, avatar, uuid, registrationDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             statement.setString(1, userToInsert.getUserName());
             statement.setString(2, userToInsert.getFirstName());
             statement.setString(3, userToInsert.getLastName());
@@ -164,8 +164,8 @@ public class UserManagementService {
             } else {
                 statement.setNull(10, Types.BLOB);
             }
-
-            statement.setString(11, userToInsert.getRegistrationDate());
+            statement.setString(11, HashUtils.generateUUID());
+            statement.setString(12, userToInsert.getRegistrationDate());
 
             int rowsInserted = statement.executeUpdate();
             return rowsInserted > 0;

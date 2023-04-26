@@ -6,11 +6,8 @@ import com.hellokoding.springboot.view.userclasses.UserAuthKey;
 import com.hellokoding.springboot.view.userclasses.UserLoginDetails;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import services.registration.UserManagementService;
 
 import java.lang.reflect.Field;
@@ -28,12 +25,6 @@ public class UserAuthorisationController {
 
     public UserAuthorisationController(UserManagementService userManagementService) {
         this.userManagementService = userManagementService;
-    }
-
-    @GetMapping({"/", "/register"})
-    public String register(Model model,
-                           @RequestParam(value = "name", required = false, defaultValue = "World") String name) {
-        return "Registration";
     }
 
     @PostMapping("auth")

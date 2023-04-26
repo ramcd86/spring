@@ -5,6 +5,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.UUID;
 
 public class HashUtils {
 
@@ -33,4 +34,10 @@ public class HashUtils {
         String actualHash = hashWithSalt(input, salt);
         return actualHash.equals(expectedHash);
     }
+
+    public static String generateUUID() {
+        UUID uuid = UUID.randomUUID();
+        return uuid.toString();
+    }
+
 }
