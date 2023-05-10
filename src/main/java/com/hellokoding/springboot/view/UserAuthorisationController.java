@@ -6,8 +6,8 @@ import com.hellokoding.springboot.view.userclasses.UserAuthKey;
 import com.hellokoding.springboot.view.userclasses.UserLoginDetails;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
 import services.registration.UserManagementService;
 
 import java.lang.reflect.Field;
@@ -25,6 +25,23 @@ public class UserAuthorisationController {
 
     public UserAuthorisationController(UserManagementService userManagementService) {
         this.userManagementService = userManagementService;
+    }
+
+    @RequestMapping(value = "/user-login", method = RequestMethod.GET)
+    public String userPageLoginView(Model model) {
+        return "user-login";
+    }
+
+    @RequestMapping(value = "/user-login-verify", method = RequestMethod.POST)
+    public String userPageLogin(
+            @RequestParam String email,
+            @RequestParam String password,
+            Model model) {
+
+        model.addAttribute("email", email);
+        model.addAttribute("password", password);
+
+        return "login-success";
     }
 
     @PostMapping("auth")

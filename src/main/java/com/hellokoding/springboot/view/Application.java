@@ -16,9 +16,11 @@ public class Application {
 
         SpringApplication.run(Application.class, args);
 
-        DatabaseVerification dbVerification = new DatabaseVerification();
-        dbVerification.validateUserTable();
-        dbVerification.validateStoreTable();
+        DatabaseVerification.databaseVerification()
+                .validateUserTable()
+                .validateStoreTable()
+                .validateStoreItems()
+                .validateStoreReviews();
 
     }
 }

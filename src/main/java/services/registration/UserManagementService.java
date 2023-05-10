@@ -5,27 +5,28 @@ import com.hellokoding.springboot.view.userclasses.User;
 import com.hellokoding.springboot.view.userclasses.UserAuthKey;
 import com.hellokoding.springboot.view.userclasses.UserLoginDetails;
 import org.springframework.stereotype.Service;
-import services.utils.Environment;
+import services.utils.DatabaseVerification;
 import services.utils.HashUtils;
 import services.utils.TimeUtils;
 
+import java.io.ByteArrayInputStream;
 import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 import java.util.Base64;
-import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
+
 
 @Service
 public class UserManagementService {
 
-    private final Properties dbProperties = new Properties();
-
     public boolean isAuthKeyValid(UserAuthKey authKey) throws Exception {
-        dbProperties.put("user", Environment.USER);
-        dbProperties.put("password", Environment.PASS);
-        try (Connection conn = DriverManager.getConnection(Environment.DB_URL, dbProperties)) {
-            PreparedStatement statement = conn.prepareStatement(
-                    "SELECT * FROM users WHERE authKey = '" + authKey.getAuthKey() + "'");
+
+        try (
+                Connection conn = DatabaseVerification.getConnection();
+                PreparedStatement statement = conn.prepareStatement(
+                        "SELECT * FROM users WHERE authKey = '" + authKey.getAuthKey() + "'");
+        ) {
+
             try (ResultSet rs = statement.executeQuery()) {
                 if (!rs.next()) {
                     throw new Exception("No such auth key");
@@ -37,15 +38,18 @@ public class UserManagementService {
     }
 
     private String updateAuthKey(String email) throws Exception {
-        dbProperties.put("user", Environment.USER);
-        dbProperties.put("password", Environment.PASS);
+
         String salt = HashUtils.generateSalt();
         String authKey = HashUtils.hashWithSalt(email, salt);
-        try (Connection conn = DriverManager.getConnection(Environment.DB_URL, dbProperties)) {
-            PreparedStatement statement = conn.prepareStatement(
-                    "UPDATE users SET authKey = '" + authKey + "', authKeyExpiry = '"
-                            + TimeUtils.getDateNowPlus6MonthsAsISODateTimeString() + "' WHERE email = '" + email
-                            + "'");
+
+        try (
+                Connection conn = DatabaseVerification.getConnection();
+                PreparedStatement statement = conn.prepareStatement(
+                        "UPDATE users SET authKey = '" + authKey + "', authKeyExpiry = '"
+                                + TimeUtils.getDateNowPlus6MonthsAsISODateTimeString() + "' WHERE email = '" + email
+                                + "'");
+        ) {
+
             int rs = statement.executeUpdate();
             if (rs > 0) {
                 return authKey;
@@ -81,10 +85,11 @@ public class UserManagementService {
     }
 
     public PublicUserDetails getUser(UserLoginDetails userLoginDetails) throws Exception {
-        dbProperties.put("user", Environment.USER);
-        dbProperties.put("password", Environment.PASS);
-        try (Connection conn = DriverManager.getConnection(Environment.DB_URL, dbProperties)) {
-            PreparedStatement statement = conn.prepareStatement("SELECT * FROM users WHERE email = ?");
+        try (
+                Connection conn = DatabaseVerification.getConnection();
+                PreparedStatement statement = conn.prepareStatement("SELECT * FROM users WHERE email = ?");
+        ) {
+
             statement.setString(1, userLoginDetails.getEmail());
             try (ResultSet rs = statement.executeQuery()) {
                 if (!rs.next()) {
@@ -121,10 +126,11 @@ public class UserManagementService {
     }
 
     public boolean userExists(String email) throws SQLException {
-        dbProperties.put("user", Environment.USER);
-        dbProperties.put("password", Environment.PASS);
-        try (Connection conn = DriverManager.getConnection(Environment.DB_URL, dbProperties)) {
-            PreparedStatement statement = conn.prepareStatement("SELECT * FROM users WHERE email = ?");
+        try (
+                Connection conn = DatabaseVerification.getConnection();
+                PreparedStatement statement = conn.prepareStatement("SELECT * FROM users WHERE email = ?");
+        ) {
+
             statement.setString(1, email);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
@@ -136,16 +142,17 @@ public class UserManagementService {
     }
 
     public boolean insertUser(User userToInsert) throws SQLException, NoSuchAlgorithmException {
-        dbProperties.put("user", Environment.USER);
-        dbProperties.put("password", Environment.PASS);
 
         String salt = HashUtils.generateSalt();
         String hash = HashUtils.hashWithSalt(userToInsert.getPassword(), salt);
         String authKey = HashUtils.hashWithSalt(userToInsert.getEmail(), salt);
 
-        try (Connection conn = DriverManager.getConnection(Environment.DB_URL, dbProperties)) {
-            PreparedStatement statement = conn.prepareStatement(
-                    "INSERT INTO users (userName, firstName, lastName, email, hash, salt, authKey, authKeyExpiry, dob, avatar, uuid, registrationDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        try (
+                Connection conn = DatabaseVerification.getConnection();
+                PreparedStatement statement = conn.prepareStatement(
+                        "INSERT INTO users (userName, firstName, lastName, email, hash, salt, authKey, authKeyExpiry, dob, avatar, uuid, registrationDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        ) {
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(userToInsert.getAvatar()));
             statement.setString(1, userToInsert.getUserName());
             statement.setString(2, userToInsert.getFirstName());
             statement.setString(3, userToInsert.getLastName());
@@ -157,13 +164,11 @@ public class UserManagementService {
             statement.setString(9, userToInsert.getDob());
 
             if (userToInsert.getAvatar() != null) {
-                byte[] decodedBytes = Base64.getDecoder().decode(userToInsert.getAvatar());
-                Blob avatarBlob = conn.createBlob();
-                avatarBlob.setBytes(1, decodedBytes);
-                statement.setBlob(10, avatarBlob);
+                statement.setBinaryStream(10, inputStream, inputStream.available());
             } else {
                 statement.setNull(10, Types.BLOB);
             }
+
             statement.setString(11, HashUtils.generateUUID());
             statement.setString(12, userToInsert.getRegistrationDate());
 
@@ -171,4 +176,5 @@ public class UserManagementService {
             return rowsInserted > 0;
         }
     }
+
 }

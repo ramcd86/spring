@@ -8,14 +8,36 @@ import java.util.Properties;
 
 public class DatabaseVerification {
 
-    private final Properties info = new Properties();
+    public static Connection getConnection() throws SQLException {
+        Properties connectionProperties = new Properties();
+        connectionProperties.put("user", Environment.USER);
+        connectionProperties.put("password", Environment.PASS);
+        return DriverManager.getConnection(Environment.DB_URL, connectionProperties);
+    }
 
-    public void validateUserTable() throws SQLException {
+    public static DatabaseVerification databaseVerification() throws SQLException {
+        return new DatabaseVerification();
+    }
 
-        info.put("user", Environment.USER);
-        info.put("password", Environment.PASS);
+    public DatabaseVerification injectDbValidation(String query, String verificationMessage) {
 
-        String userTableDbQuery = "CREATE TABLE IF NOT EXISTS users (\n" +
+
+        try {
+            Connection conn = DatabaseVerification.getConnection();
+            Statement stmt = conn.createStatement();
+            stmt.executeUpdate(query);
+            LoggingUtils.log(verificationMessage);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return this;
+    }
+
+    public DatabaseVerification validateUserTable() throws SQLException {
+
+
+        String query = "CREATE TABLE IF NOT EXISTS users (\n" +
                 "    user_id INT AUTO_INCREMENT PRIMARY KEY,\n" +
                 "    userName VARCHAR(100) NOT NULL,\n" +
                 "    firstName VARCHAR(100) NOT NULL,\n" +
@@ -30,46 +52,61 @@ public class DatabaseVerification {
                 "    uuid VARCHAR(100) NOT NULL,\n" +
                 "    registrationDate VARCHAR(50) NOT NULL\n" +
                 ");";
-        try {
-            Connection conn = DriverManager.getConnection(Environment.DB_URL, info);
-            Statement stmt = conn.createStatement();
-            stmt.executeUpdate(userTableDbQuery);
-            System.out.println("userTableDbQuery verified.");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+
+        return injectDbValidation(query, "User table validated.");
 
     }
 
-    public void validateStoreTable() throws SQLException {
+    public DatabaseVerification validateStoreTable() throws SQLException {
 
-        info.put("user", Environment.USER);
-        info.put("password", Environment.PASS);
 
-        String storeTableDbQuery = "CREATE TABLE IF NOT EXISTS stores (\n" +
+        String query = "CREATE TABLE IF NOT EXISTS stores (\n" +
                 "    store_id INT AUTO_INCREMENT PRIMARY KEY,\n" +
                 "    storeTitle VARCHAR(100) NOT NULL,\n" +
                 "    storeDescription TEXT(1000) NOT NULL,\n" +
                 "    canMessage BOOLEAN NOT NULL,\n" +
                 "    isPrivate BOOLEAN NOT NULL,\n" +
                 "    storeTheme VARCHAR(50) NOT NULL,\n" +
-                "    storeItems TEXT(20000) NOT NULL,\n" +
                 "    craftTags TEXT(1000) NOT NULL,\n" +
+                "    addressLine1 TEXT(100) NOT NULL,\n" +
+                "    addressLine2 TEXT(100) NOT NULL,\n" +
+                "    addressLine3 TEXT(100) NOT NULL,\n" +
+                "    postcode TEXT(100) NOT NULL,\n" +
                 "    parentUUID VARCHAR(100) NOT NULL,\n" +
                 "    ownUUID VARCHAR(100) NOT NULL,\n" +
-                "    endorsements VARCHAR(10000) NOT NULL,\n " +
-                "    storeMessages TEXT(30000) NOT NULL,\n" +
-                "    storeReviews TEXT(30000) NOT NULL,\n" +
                 "    storeBanner BLOB\n " +
                 ");";
-        try {
-            Connection conn = DriverManager.getConnection(Environment.DB_URL, info);
-            Statement stmt = conn.createStatement();
-            stmt.executeUpdate(storeTableDbQuery);
-            System.out.println("storeTableDbQuery verified.");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+
+        return injectDbValidation(query, "Store table validated.");
+
+    }
+
+    public DatabaseVerification validateStoreReviews() throws SQLException {
+
+        String query = "CREATE TABLE IF NOT EXISTS storeReviews (\n" +
+                "    store_id INT AUTO_INCREMENT PRIMARY KEY,\n" +
+                "    storeRating INT NOT NULL,\n" +
+                "    parentUUID VARCHAR(200) NOT NULL,\n" +
+                "    fromUser VARCHAR(200) NOT NULL,\n" +
+                "    review TEXT(1000) NOT NULL\n" +
+                ");";
+
+        return injectDbValidation(query, "Store Reviews table validated.");
+
+    }
+
+    public DatabaseVerification validateStoreItems() throws SQLException {
+
+        String query = "CREATE TABLE IF NOT EXISTS storeItems (\n" +
+                "    store_id INT AUTO_INCREMENT PRIMARY KEY,\n" +
+                "    storeItemName VARCHAR(200) NOT NULL,\n" +
+                "    parentUUID VARCHAR(200) NOT NULL,\n" +
+                "    storeItemImage BLOB,\n" +
+                "    storeItemDescription TEXT(1000) NOT NULL,\n" +
+                "    storeItemPrice VARCHAR(10) NOT NULL\n" +
+                ");";
+
+        return injectDbValidation(query, "Store Items table validated.");
 
     }
 
