@@ -74,6 +74,7 @@ public class DatabaseVerification {
                 "    postcode TEXT(100) NOT NULL,\n" +
                 "    parentUUID VARCHAR(100) NOT NULL,\n" +
                 "    ownUUID VARCHAR(100) NOT NULL,\n" +
+                "    publicStoreId VARCHAR(100) NOT NULL,\n" +
                 "    storeAvatar BLOB,\n " +
                 "    storeBanner BLOB\n " +
                 ");";

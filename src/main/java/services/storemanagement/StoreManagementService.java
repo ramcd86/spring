@@ -71,9 +71,10 @@ public class StoreManagementService {
                                 "postcode, " +
                                 "parentUUID, " +
                                 "ownUUID, " +
+                                "publicStoreId, " +
                                 "storeAvatar, " +
                                 "storeBanner) VALUES " +
-                                "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                                "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         ) {
 
 
@@ -90,17 +91,18 @@ public class StoreManagementService {
             statement.setString(10, store.getPostcode());
             statement.setString(11, store.getParentUUID());
             statement.setString(12, storeOwnUUD);
+            statement.setString(13, HashUtils.generatePublicId(store.getStoreTitle()));
 
             if (store.getStoreAvatar() != null) {
-                statement.setBinaryStream(13, inputStream, inputStream.available());
-            } else {
-                statement.setNull(13, Types.BLOB);
-            }
-
-            if (store.getStoreBanner() != null) {
                 statement.setBinaryStream(14, inputStream, inputStream.available());
             } else {
                 statement.setNull(14, Types.BLOB);
+            }
+
+            if (store.getStoreBanner() != null) {
+                statement.setBinaryStream(15, inputStream, inputStream.available());
+            } else {
+                statement.setNull(15, Types.BLOB);
             }
 
             //                    "    storeItems TEXT(20000) NOT NULL,\n" +
@@ -120,7 +122,6 @@ public class StoreManagementService {
             return (rowsInserted > 0 && insertStoreItemsJoined == StoreEnums.ITEM_INSERTED) ? StoreEnums.STORE_INSERTED : StoreEnums.INSERTION_FAILED;
 
         } catch (SQLException e) {
-            LoggingUtils.log(e);
             return StoreEnums.INSERTION_FAILED;
         }
 
@@ -163,7 +164,7 @@ public class StoreManagementService {
         List<StoreSummary> storeSummaries = new ArrayList<StoreSummary>();
         try (
                 Connection conn = DatabaseVerification.getConnection();
-                PreparedStatement statement = conn.prepareStatement("SELECT storeTitle, storeDescription, storeTheme, ownUUID, storeBanner FROM stores");
+                PreparedStatement statement = conn.prepareStatement("SELECT storeTitle, storeDescription, storeTheme, ownUUID, storeBanner, publicStoreId FROM stores");
                 ResultSet rs = statement.executeQuery();
         ) {
             if (!rs.next()) {
@@ -177,11 +178,13 @@ public class StoreManagementService {
                 String storeDescription = rs.getString("storeDescription");
                 String ownUUID = rs.getString("ownUUID");
                 String storeTheme = rs.getString("storeTheme");
+                String publicStoreId = rs.getString("publicStoreId");
 
                 storeSummary.setStoreTitle(storeTitle);
                 storeSummary.setStoreDescription(storeDescription);
                 storeSummary.setOwnUUID(ownUUID);
                 storeSummary.setStoreTheme(storeTheme);
+                storeSummary.setPublicStoreId(publicStoreId);
                 storeSummaries.add(storeSummary);
             }
 
@@ -195,7 +198,7 @@ public class StoreManagementService {
         return response;
     }
 
-    public byte[] getStoreImage(String imageType, String associatedStoreUUID) throws SQLException {
+    public byte[] getStoreImage(String imageType, String publicStoreId) throws SQLException {
 
         byte[] image;
         String storeImageQueryType = "";
@@ -209,10 +212,10 @@ public class StoreManagementService {
 
         try (
                 Connection conn = DatabaseVerification.getConnection();
-                PreparedStatement statement = conn.prepareStatement("SELECT " + storeImageQueryType + " FROM stores WHERE ownUUID = ?");
+                PreparedStatement statement = conn.prepareStatement("SELECT " + storeImageQueryType + " FROM stores WHERE publicStoreId = ?");
         ) {
 
-            statement.setString(1, associatedStoreUUID);
+            statement.setString(1, publicStoreId);
             ResultSet rs = statement.executeQuery();
 
             if (!rs.next()) {

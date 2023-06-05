@@ -11,6 +11,29 @@ import java.util.UUID;
 public class HashUtils {
 
     private static final int SALT_LENGTH = 16;
+    private static final String ALPHA_NUMERIC_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final int RANDOM_STRING_LENGTH = 10;
+
+    public static String generatePublicId(String input) {
+        String lowerCaseInput = input.toLowerCase();
+        String stripped = lowerCaseInput.replaceAll("[^a-zA-Z0-9\\s]", "");
+        String replaced = stripped.replaceAll("\\s+", "-");
+        String randomString = HashUtils.generateRandomString();
+        return replaced + "-" + randomString;
+    }
+
+    private static String generateRandomString() {
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder(RANDOM_STRING_LENGTH);
+
+        for (int i = 0; i < RANDOM_STRING_LENGTH; i++) {
+            int index = random.nextInt(ALPHA_NUMERIC_CHARS.length());
+            char randomChar = ALPHA_NUMERIC_CHARS.charAt(index);
+            sb.append(randomChar);
+        }
+
+        return sb.toString();
+    }
 
     // CAN REPLACE SALT WITH STATIC VALUE FOR TEST
     public static String hash(String input) throws NoSuchAlgorithmException {
@@ -41,23 +64,5 @@ public class HashUtils {
         return uuid.toString();
     }
 
-    public static String generateRandomString() {
-        final int length = 20;
-        final String CHARACTERS = "abcdefghijklmnopqrstuvwxyz0123456789";
-        Random random = new Random();
-        StringBuilder sb = new StringBuilder(length);
-
-        for (int i = 0; i < length; i++) {
-            char randomChar = CHARACTERS.charAt(random.nextInt(CHARACTERS.length()));
-
-            if (random.nextBoolean()) {
-                randomChar = Character.toUpperCase(randomChar);
-            }
-
-            sb.append(randomChar);
-        }
-
-        return sb.toString();
-    }
 
 }
