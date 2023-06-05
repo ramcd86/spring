@@ -18,7 +18,8 @@ Accepts the following example JSON:
 }
 ```
 
-Successful registrations return `User inserted.`, failures return an array of reasons why it failed, i.e. empty fields.
+Successful registrations return `User inserted.`, failures return an array of
+reasons why it failed, i.e. empty fields.
 
 ### `/login`
 
@@ -56,4 +57,58 @@ Accepts the following example JSON:
 }
 ```
 
-Returns either `true` if the user's authentication key is valid or `false` if it isn't.
+Returns either `true` if the user's authentication key is valid or `false` if it
+isn't.
+
+### `/create-store`
+
+Accepts the following example JSON:
+
+```
+{
+    "storeTitle": "Test Store",
+    "storeDescription": "Test store description",
+    "canMessage": true,
+    "isPrivate": false,
+    "storeTheme": "Blue",
+    "storeItems": [
+        { 
+            "parentUUID": "0",
+            "storeItemName": "test item", 
+            "storeItemImage": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCABkAFoDASIAAhEBAxEB/8QAHAAAAgIDAQEAAAAAAAAAAAAAAAcEBgQFAgMI/8QANxAAAQMDAwIDBwMDBQAAAAAAAQIDBAUGEQcSIRMxQQgiMlFhcYGRobHRFUKxwSMkMlJik8EjNDVDM0NTc5OisrPC0f/EABkBAQEBAQEBAAAAAAAAAAAAAAABAgMEBf/EACQRAAICAQMEAgIDAAAAAAAAAAABAgMRBDEGEhMxUWGBoSIyQVJxoQcVM//EABwBAQACAgMAAAAAAAAAAAAAAAABAgMRBCEAEv/EACURAQEBAQAAAAAAAAAAAAAAAAEAAhEx/9oADAMBAAIRAxEAPwC6KKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooA//2Q==", 
+            "storeItemDescription": "test item description",
+            "storeItemPrice": "10.00"
+        }
+    ],
+    "craftTags": ["retail"],
+    "addressLine1": "1",
+    "addressLine2": "Test Street",
+    "addressLine3": "Test county",
+    "postcode": "000000",
+    "parentUUID": "018fb436-6c9f-4026-bdff-87992fb48151",
+    "ownUUID": "002",
+    "storeReviews": [
+            { 
+                "parentUUID": "0",
+                "rating": 0,
+                "fromUser": "test_user", 
+                "review": "test dorsement" 
+            }
+        ],
+    "storeAvatar": "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",
+    "storeBanner": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEwAACxMBAJqcGAAACOlJREFUeJzt3duLnHcdx/H3JMGCNkJskm02EX8XQlJbpNoLkRTtAa0H0GsPf4BnrBWL/g2KLan1QqHF1J7uFYtoqaRUQrGhojV3U5ukNrG1yRZJk3TXi2fH7CYzvzn+Ds/M+wVfFnZmf79nvjOffeaZeQ4gSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZKksXVKL8CUOsC1wHbgXYWXRZtdAFaAt4C1wssysTYFZAm4AzgI3ADsB5Zp12NYRGvASeA48BLwLPBH4HTJhZoX1wP3AC/QNNqan/oL8D2af3wa003Ao8Alyj+RVtq6CPwauBENtQ94Elil/BNn5a1V4HFgL7rKFuD7XN6gsxa3VoC7cdvy/5aA31P+ibHqqqeAXSy4jwKnKP9kWHXWSeBmFtSdwDnKPwlW3XUWuI0FcydwnvLNt9pR5ykUkhIbQrcAT9N8+y2N6hzwSeBYzklzB2SJ5ku/PZnn1Xw4RbNNcibXhFtyTbQ+1yMYDk1uGThMxn/sW3NNRLPLyNcyzqf59EHgTeDPOSbLlcT30+yo9p5M82m+rQAHaN5yJZXrLdZPMByane3Aj3NMlGMNchPwYqa5tDjWaF5bf085SY41yI8wHJq9DvDDHJOkdD1wgrwfBmhxXKLZ+zfZwVep1yBfwXAonW3Al1NOkDogX008vpT0NZbyLdYS8K+E40vQbKwvkejb9ZRrkDsSji31dIDbUw2eMiAHE44tbXRrqoFTBuSGhGNLGx1INXDKgOxPOPa8eh14o/RCtFCy11qqgHRo9rzUaE4DnwZ2AtcBnyHjLt1zYF/pBRjXdsofhdam+lSfHt5VwXK1qZLs65fqY95lmgPuNdzrNGuOft4AdmRcljZbBl6d9aCp3mJ5IunRvRW57Vy2pWi/a1IMmvOIQql1DIgUYUCkCAMiRRgQKcKASBEGRIowIFKEAZEiDIgUYUCkCAMiRRgQKcKASBEGRIowIFKEAZEiDIgUYUCkCAMiRRiQdC4A/wQutnyOhWZA0vglzRnHP7D+86EEc/ziijkeTjCHEgmUP5FYqXpmQE8ODbh/N9LH7oC/+Wmf+3aA5yp4/KUqRPo4Mdcgs/fEgN9/G3hgBuPfB9zd5/drkbk1IQMye7GzVU4bkvvpH45R5lZFAuVXuaXqCMNfqBvfbnUj9+tuuN99Q8bcAhyt4PGXqjCkP1UJlG9YyTo0Qo96IelG7tNdv8/9Q8bqAD+v4HEbkBEFyjesdI0akm7k9i6jhePBCh5v6QpD+lSVQPmG1VCjhOSeCW8Dw7GxwpBeVSVQvmG11CghmYTh2Fxhqm5mFijfsJpq1iExHFdXmKahuQXKN6y2mlVIDEf/ClP0NLtA+YbVWNOGxHAMrjB5W/MLlG9YrTVpSAxHvMKEfS0iUL5hNde4ITEcwyuM2dOiAuUbVnuNGhLDMVqFEftZhUD5hrWhhoXEcIxeYUgvqxIo37C21KCQGI7xKgzoY5UC5RvWpjrE5h0ct+C+VeNWIIFtKQbV2L4F3AI8ThOULwEfK7pEAgxITT6+XqqIB0xJEQZEijAgUoQBkSIMiBRhQKQIAyJFGBApwoBIEQZEijAgUoQBkSIMiBRhQKQIAyJFGBApwoBIER5RWI8/0VxCrXfI7cGyi6OUAuUP4m9TXXlRzg6DL/pp9a9AiwTKN6wt1e+KtT2GZPQKkT5WJ1C+YW2oWDh6DMloFUboZTUC5RtWe40Sjh5DMrzCGP0sLlC+YTXXOOHoMSTxChP0tJhA+YbVWpOEo8eQDK4weVvzC5RvWI01TTh6DEn/ClP0NLtA+YbVVrMIR48hubrCNA3NLVC+YTXVLMPRY0g2V5iqm5kFyjeslkoRjh5DcrnCdK3MK1C+YTXUsHB0gHsjt9/L5ssi9GNImgpD+lSVQPmGla5RwvEg0I3cpwv8bMg4YEgMSMtq1HCsMTwgaxgSAzJH9cyQ3lx5abVu5L7dDfcbFpIO8FwFj3+uAuLxILP3ROS2Ds0L/esTjPsN4IHI7WtD5tYEDMjsDdqoniYcPd8kHpJhG/SqRKD8KrdUHeHqF2rsirXdSB+7A/6m35VxtwBHK3j8pSpE+lidQPmGlayHgevWe7ELOBy5bzfSx27k7x7aMMfOIXMsQoVIH6sTKN+w0nUJOLX+M3a/bqSP3SF/exE4McIci1Ah0seJeUx6OluBPYnn2AbsTTzHQnMjXYowIFKEAZEiDIgUYUCkCAMiRRgQKcKASBEGRIowIFKEAZEiDIgUYUCkCAMiRRgQKcKASBEGRIowIFKEAZEiDIgUkSogFxKNO4+2D/h9B3hvzgVpubdTDJoqICuJxp1H7wPu6vP7zwI7Mi9Lm50rvQDj6ACrlD9XUlvqNJdD0gE+B5ypYLnaUu+QSMpzub4C7Es4/jz6z/pP1xzjeZkWnt39eMKx59UODMckkr3WUgbkpYRjSxv9I9XAKQPybMKxpY2OpBo45TbIbuC1hONL0Gyk7wb+nWLwlGuQ08ALCceXAJ4nUTgg/TfpjyQeX0r6Gkt9ya4lmutXeJkFpXAJWKb5ziiJ1GuQ14AnE8+hxfUYCcMBeS76eCPw10xzaXGs0ry2kn3EC3n25v0brkU0e4+ROByQ77/6XpoHc22m+TTfzgEHgFdTT7Q19QTrVmh2R+6316o0rh8Afyi9ELPWAZ6i/J6fVrvrN2Tcns294bwLOEbz0Zw0rhPAR0j4xeCVch9yewb4PC07uEVVOEvz2skWDihzTPox4IskOkRSc+k88AXgxdILktNtNP8VSr+ntequN4FPsKBuBk5S/kmw6qxXgA+z4HYBv6P8k2HVVb8FdiKg+TTtuzQb76WfGKtsnQW+g7sm9bUMPIpnRFnEeodm1/U9aKgPAYeBi5R/4qy0dRH4Fc2uIxrTbpq3Xs/jWmWeahU4SvNWajcVa9P7vF3A7cCtNP9t9tOcd8vzC9dtlebTqOM0O6weAZ4m8xd+k2pTQPrpAO+mOYftNYWXRZu9TfOhy39p1hqSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJElaFP8DZ1tTyHQQ7y4AAAAASUVORK5CYII="
+}   
+```
+
+Returns either `Store inserted` or a `400` bad request if fails.
+
+### `/get-stores-list`
+
+Returns a list of stores in summary including the following properties:
+`storeTitle`, `storeDescription`, `storeTheme`, `ownUUID`
+
+### `/store-banner-images/{imageType}/{storeUUID}.{fileType}`
+
+Accepts the imagetype, which is either 'avatar', or 'banner', also accepts the '
+storeUUID' which is the store's UUID and accepts the 'filetype', i.e. jpg, png,
+etc.

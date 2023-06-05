@@ -5,6 +5,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.Random;
 import java.util.UUID;
 
 public class HashUtils {
@@ -38,6 +39,25 @@ public class HashUtils {
     public static String generateUUID() {
         UUID uuid = UUID.randomUUID();
         return uuid.toString();
+    }
+
+    public static String generateRandomString() {
+        final int length = 20;
+        final String CHARACTERS = "abcdefghijklmnopqrstuvwxyz0123456789";
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder(length);
+
+        for (int i = 0; i < length; i++) {
+            char randomChar = CHARACTERS.charAt(random.nextInt(CHARACTERS.length()));
+
+            if (random.nextBoolean()) {
+                randomChar = Character.toUpperCase(randomChar);
+            }
+
+            sb.append(randomChar);
+        }
+
+        return sb.toString();
     }
 
 }

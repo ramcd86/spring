@@ -2,6 +2,8 @@ package services.storemanagement;
 
 import com.hellokoding.springboot.view.storeclasses.Store;
 import com.hellokoding.springboot.view.storeclasses.StoreItem;
+import com.hellokoding.springboot.view.storeclasses.StoreSummary;
+import com.hellokoding.springboot.view.storeclasses.StoreSummaryResponse;
 import org.springframework.stereotype.Service;
 import services.utils.DatabaseVerification;
 import services.utils.HashUtils;
@@ -10,8 +12,10 @@ import services.utils.StoreEnums;
 
 import java.io.ByteArrayInputStream;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -67,8 +71,9 @@ public class StoreManagementService {
                                 "postcode, " +
                                 "parentUUID, " +
                                 "ownUUID, " +
+                                "storeAvatar, " +
                                 "storeBanner) VALUES " +
-                                "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                                "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         ) {
 
 
@@ -86,10 +91,16 @@ public class StoreManagementService {
             statement.setString(11, store.getParentUUID());
             statement.setString(12, storeOwnUUD);
 
-            if (store.getStoreBanner() != null) {
+            if (store.getStoreAvatar() != null) {
                 statement.setBinaryStream(13, inputStream, inputStream.available());
             } else {
                 statement.setNull(13, Types.BLOB);
+            }
+
+            if (store.getStoreBanner() != null) {
+                statement.setBinaryStream(14, inputStream, inputStream.available());
+            } else {
+                statement.setNull(14, Types.BLOB);
             }
 
             //                    "    storeItems TEXT(20000) NOT NULL,\n" +
@@ -144,6 +155,79 @@ public class StoreManagementService {
             }
         }
         return StoreEnums.ITEM_INSERTION_FAILED;
+    }
+
+    public StoreSummaryResponse getStoresListSummaryFromDatabase() throws SQLException {
+        StoreSummaryResponse response = new StoreSummaryResponse();
+        response.setStoreSummaryQueryStatus(StoreEnums.STORE_LIST_EMPTY);
+        List<StoreSummary> storeSummaries = new ArrayList<StoreSummary>();
+        try (
+                Connection conn = DatabaseVerification.getConnection();
+                PreparedStatement statement = conn.prepareStatement("SELECT storeTitle, storeDescription, storeTheme, ownUUID, storeBanner FROM stores");
+                ResultSet rs = statement.executeQuery();
+        ) {
+            if (!rs.next()) {
+                return response;
+            }
+
+            while (rs.next()) {
+                response.setStoreSummaryQueryStatus(StoreEnums.STORE_LIST_POPULATED);
+                StoreSummary storeSummary = new StoreSummary();
+                String storeTitle = rs.getString("storeTitle");
+                String storeDescription = rs.getString("storeDescription");
+                String ownUUID = rs.getString("ownUUID");
+                String storeTheme = rs.getString("storeTheme");
+
+                storeSummary.setStoreTitle(storeTitle);
+                storeSummary.setStoreDescription(storeDescription);
+                storeSummary.setOwnUUID(ownUUID);
+                storeSummary.setStoreTheme(storeTheme);
+                storeSummaries.add(storeSummary);
+            }
+
+            response.setStores(storeSummaries);
+
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return response;
+    }
+
+    public byte[] getStoreImage(String imageType, String associatedStoreUUID) throws SQLException {
+
+        byte[] image;
+        String storeImageQueryType = "";
+
+        if (Objects.equals(imageType, "avatar")) {
+            storeImageQueryType = "storeAvatar";
+        }
+        if (Objects.equals(imageType, "banner")) {
+            storeImageQueryType = "storeBanner";
+        }
+
+        try (
+                Connection conn = DatabaseVerification.getConnection();
+                PreparedStatement statement = conn.prepareStatement("SELECT " + storeImageQueryType + " FROM stores WHERE ownUUID = ?");
+        ) {
+
+            statement.setString(1, associatedStoreUUID);
+            ResultSet rs = statement.executeQuery();
+
+            if (!rs.next()) {
+                throw new RuntimeException("No such image");
+            }
+
+
+            Blob imageData = rs.getBlob(storeImageQueryType);
+            image = imageData.getBytes(1, (int) imageData.length());
+
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return image;
     }
 
 }

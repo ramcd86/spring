@@ -19,6 +19,7 @@ public class Store {
     private String parentUUID;
     private String ownUUID;
     private List<StoreReviews> storeReviews;
+    private String storeAvatar;
     private String storeBanner;
 
     public String getStoreTitle() {
@@ -141,6 +142,14 @@ public class Store {
         this.storeReviews = storeReviews;
     }
 
+    public String getStoreAvatar() {
+        return storeAvatar;
+    }
+
+    public void setStoreAvatar(String storeAvatar) {
+        this.storeAvatar = storeAvatar;
+    }
+
     @Override
     public String toString() {
         return "Store{" +
@@ -158,11 +167,11 @@ public class Store {
                 ", parentUUID='" + parentUUID + '\'' +
                 ", ownUUID='" + ownUUID + '\'' +
                 ", storeReviews=" + storeReviews +
+                ", storeBanner='" + storeAvatar + '\'' +
                 ", storeBanner='" + storeBanner + '\'' +
                 '}';
     }
 
 
-    //getters and setters for all fields go here
 }
 
