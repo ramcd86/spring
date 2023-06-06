@@ -1,6 +1,7 @@
 package com.hellokoding.springboot.view;
 
 import com.hellokoding.springboot.view.storeclasses.Store;
+import com.hellokoding.springboot.view.storeclasses.StoreResponse;
 import com.hellokoding.springboot.view.storeclasses.StoreSummaryResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import services.storemanagement.StoreManagementService;
+import services.utils.ImageProcessorService;
 import services.utils.LoggingUtils;
 import services.utils.StoreEnums;
 
@@ -21,9 +23,11 @@ import java.util.concurrent.CompletableFuture;
 public class StoreController {
 
     private final StoreManagementService storeManagementService;
+    private final ImageProcessorService imageProcessingService;
 
-    public StoreController(StoreManagementService storeManagementService) {
+    public StoreController(StoreManagementService storeManagementService, ImageProcessorService imageProcessingService) {
         this.storeManagementService = storeManagementService;
+        this.imageProcessingService = imageProcessingService;
     }
 
     @PostMapping("create-store")
@@ -72,6 +76,25 @@ public class StoreController {
         return ResponseEntity.ok(storeSummaryResponse);
     }
 
+    @GetMapping("get-store/{storeId}")
+    public ResponseEntity<StoreResponse> getIndividualStore(@PathVariable("storeId") String storeId) {
+
+        StoreResponse storeResponse;
+
+        CompletableFuture<StoreResponse> storeSummaryResponseCompletableFuture = CompletableFuture.supplyAsync(() -> {
+            try {
+                return storeManagementService.getIndividualStore(storeId);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        storeResponse = storeSummaryResponseCompletableFuture.join();
+
+
+        return ResponseEntity.ok(storeResponse);
+    }
+
 
     @GetMapping("store-banner-images/{imageType}/{storeUUID}.{fileType}")
     public ResponseEntity<?> getStoreBannerImage(@PathVariable("imageType") String imageType,
@@ -82,7 +105,7 @@ public class StoreController {
 
         CompletableFuture<byte[]> storeImageCompletable = CompletableFuture.supplyAsync(() -> {
             try {
-                return storeManagementService.getStoreImage(imageType, storeUUID);
+                return imageProcessingService.getStoreImage(imageType, storeUUID);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

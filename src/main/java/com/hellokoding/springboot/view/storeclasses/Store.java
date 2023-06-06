@@ -22,7 +22,6 @@ public class Store {
     private String parentUUID;
     private String ownUUID;
     private String publicStoreId;
-    private List<StoreReviews> storeReviews;
     private String storeAvatar;
     private String storeBanner;
 }

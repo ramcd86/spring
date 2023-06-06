@@ -83,6 +83,7 @@ public class DatabaseVerification {
 
     }
 
+    //@TODO
     public DatabaseVerification validateStoreReviews() throws SQLException {
 
         String query = "CREATE TABLE IF NOT EXISTS storeReviews (\n" +
@@ -105,6 +106,7 @@ public class DatabaseVerification {
                 "    parentUUID VARCHAR(200) NOT NULL,\n" +
                 "    storeItemImage BLOB,\n" +
                 "    storeItemDescription TEXT(1000) NOT NULL,\n" +
+                "    storeItemPublicId TEXT(500) NOT NULL,\n" +
                 "    storeItemPrice VARCHAR(10) NOT NULL\n" +
                 ");";
 

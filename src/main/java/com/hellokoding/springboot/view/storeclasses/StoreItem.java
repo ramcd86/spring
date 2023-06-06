@@ -11,4 +11,5 @@ public class StoreItem {
     private String storeItemDescription;
     private String storeParentUUID;
     private String storeItemPrice;
+    private String storeItemPublicId;
 }

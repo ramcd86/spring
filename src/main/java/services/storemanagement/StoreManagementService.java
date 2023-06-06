@@ -1,9 +1,6 @@
 package services.storemanagement;
 
-import com.hellokoding.springboot.view.storeclasses.Store;
-import com.hellokoding.springboot.view.storeclasses.StoreItem;
-import com.hellokoding.springboot.view.storeclasses.StoreSummary;
-import com.hellokoding.springboot.view.storeclasses.StoreSummaryResponse;
+import com.hellokoding.springboot.view.storeclasses.*;
 import org.springframework.stereotype.Service;
 import services.utils.DatabaseVerification;
 import services.utils.HashUtils;
@@ -13,9 +10,9 @@ import services.utils.StoreEnums;
 import java.io.ByteArrayInputStream;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -105,9 +102,6 @@ public class StoreManagementService {
                 statement.setNull(15, Types.BLOB);
             }
 
-            //                    "    storeItems TEXT(20000) NOT NULL,\n" +
-            //                    "    storeReviews TEXT(30000) NOT NULL,\n" +
-
             CompletableFuture<StoreEnums> insertStoreItems = CompletableFuture.supplyAsync(() -> {
                 try {
                     return prepareStoreItemsForInsertion(store.getStoreItems(), storeOwnUUD);
@@ -133,8 +127,8 @@ public class StoreManagementService {
             try (
                     Connection conn = DatabaseVerification.getConnection();
                     PreparedStatement statement = conn.prepareStatement(
-                            "INSERT INTO storeitems (storeItemName, parentUUID, storeItemImage, storeItemDescription, storeItemPrice) VALUES " +
-                                    "(?, ?, ?, ?, ?)");
+                            "INSERT INTO storeitems (storeItemName, parentUUID, storeItemImage, storeItemDescription, storeItemPrice, storeItemPublicId) VALUES " +
+                                    "(?, ?, ?, ?, ?, ?)");
             ) {
 
                 LoggingUtils.log(storeItem.toString());
@@ -149,6 +143,7 @@ public class StoreManagementService {
                 }
                 statement.setString(4, storeItem.getStoreItemDescription());
                 statement.setString(5, storeItem.getStoreItemPrice());
+                statement.setString(6, HashUtils.generatePublicId(storeItem.getStoreItemName()));
                 int rowsInserted = statement.executeUpdate();
                 return (rowsInserted > 0) ? StoreEnums.ITEM_INSERTED : StoreEnums.ITEM_INSERTION_FAILED;
             } catch (SQLException e) {
@@ -171,7 +166,7 @@ public class StoreManagementService {
                 return response;
             }
 
-            while (rs.next()) {
+            do {
                 response.setStoreSummaryQueryStatus(StoreEnums.STORE_LIST_POPULATED);
                 StoreSummary storeSummary = new StoreSummary();
                 String storeTitle = rs.getString("storeTitle");
@@ -186,7 +181,7 @@ public class StoreManagementService {
                 storeSummary.setStoreTheme(storeTheme);
                 storeSummary.setPublicStoreId(publicStoreId);
                 storeSummaries.add(storeSummary);
-            }
+            } while (rs.next());
 
             response.setStores(storeSummaries);
 
@@ -198,39 +193,83 @@ public class StoreManagementService {
         return response;
     }
 
-    public byte[] getStoreImage(String imageType, String publicStoreId) throws SQLException {
 
-        byte[] image;
-        String storeImageQueryType = "";
+    public StoreResponse getIndividualStore(String storeId) throws SQLException {
 
-        if (Objects.equals(imageType, "avatar")) {
-            storeImageQueryType = "storeAvatar";
-        }
-        if (Objects.equals(imageType, "banner")) {
-            storeImageQueryType = "storeBanner";
-        }
+        StoreResponse response = new StoreResponse();
+        response.setStoreQueryResponseStatus(StoreEnums.STORE_EMPTY);
 
         try (
                 Connection conn = DatabaseVerification.getConnection();
-                PreparedStatement statement = conn.prepareStatement("SELECT " + storeImageQueryType + " FROM stores WHERE publicStoreId = ?");
+                PreparedStatement statement = conn.prepareStatement("SELECT * FROM stores WHERE publicStoreId = ?");
         ) {
 
-            statement.setString(1, publicStoreId);
+            statement.setString(1, storeId);
             ResultSet rs = statement.executeQuery();
 
             if (!rs.next()) {
-                throw new RuntimeException("No such image");
+                throw new RuntimeException("No such store");
             }
 
+            Store store = new Store();
+            response.setStoreQueryResponseStatus(StoreEnums.STORE_POPULATED);
+            String[] craftingTags = rs.getString("craftingTags").split(",");
+            List<String> craftingTagsAsList = new ArrayList<>(Arrays.asList(craftingTags));
+            List<StoreItem> storeItems = getStoreItemsForIndividualStore(rs.getString("ownUUID"));
 
-            Blob imageData = rs.getBlob(storeImageQueryType);
-            image = imageData.getBytes(1, (int) imageData.length());
+            store.setStoreTitle(rs.getString("storeTitle"));
+            store.setStoreDescription(rs.getString("storeDescription"));
+            store.setCanMessage(rs.getBoolean("canMessage"));
+            store.setPrivate(rs.getBoolean("isPrivate"));
+            store.setStoreTheme(rs.getString("storeTheme"));
+            store.setCraftTags(craftingTagsAsList);
+            store.setAddressLine1(rs.getString("addressLine1"));
+            store.setAddressLine2(rs.getString("addressLine2"));
+            store.setAddressLine3(rs.getString("addressLine3"));
+            store.setPostcode(rs.getString("postcode"));
+            store.setParentUUID(rs.getString("parentUUID"));
+            store.setOwnUUID(rs.getString("ownUUID"));
+            store.setPublicStoreId(rs.getString("publicStoreID"));
 
 
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return image;
+
+        return response;
+    }
+
+    private List<StoreItem> getStoreItemsForIndividualStore(String parentUUID) {
+
+        List<StoreItem> storeItems = new ArrayList<StoreItem>();
+
+        try (
+                Connection conn = DatabaseVerification.getConnection();
+                PreparedStatement statement = conn.prepareStatement("SELECT * FROM storeItems WHERE parentUUID = ?");
+        ) {
+
+            statement.setString(1, parentUUID);
+            ResultSet rs = statement.executeQuery();
+
+            if (!rs.next()) {
+                throw new RuntimeException("No such items");
+            }
+
+            do {
+                StoreItem storeItem = new StoreItem();
+                storeItem.setStoreItemName(rs.getString("storeItemName"));
+                storeItem.setStoreParentUUID(rs.getString("parentUUID"));
+                storeItem.setStoreItemDescription(rs.getString("storeItemDescription"));
+                storeItem.setStoreItemPrice(rs.getString("storeItemPrice"));
+                storeItem.setStoreItemPublicId(rs.getString("storeItemPublicId"));
+                storeItems.add(storeItem);
+            } while (rs.next());
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return storeItems;
     }
 
 }

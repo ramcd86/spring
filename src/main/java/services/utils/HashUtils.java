@@ -35,12 +35,6 @@ public class HashUtils {
         return sb.toString();
     }
 
-    // CAN REPLACE SALT WITH STATIC VALUE FOR TEST
-    public static String hash(String input) throws NoSuchAlgorithmException {
-        String salt = generateSalt();
-        return hashWithSalt(input, salt);
-    }
-
     public static String hashWithSalt(String input, String salt) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hash = digest.digest((salt + input).getBytes(StandardCharsets.UTF_8));
