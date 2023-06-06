@@ -1,6 +1,6 @@
 package services.storemanagement;
 
-import com.hellokoding.springboot.view.storeclasses.*;
+import com.tradr.springboot.view.storeclasses.*;
 import org.springframework.stereotype.Service;
 import services.utils.DatabaseVerification;
 import services.utils.HashUtils;

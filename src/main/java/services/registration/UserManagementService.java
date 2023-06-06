@@ -1,9 +1,9 @@
 package services.registration;
 
-import com.hellokoding.springboot.view.userclasses.PublicUserDetails;
-import com.hellokoding.springboot.view.userclasses.User;
-import com.hellokoding.springboot.view.userclasses.UserAuthKey;
-import com.hellokoding.springboot.view.userclasses.UserLoginDetails;
+import com.tradr.springboot.view.userclasses.PublicUserDetails;
+import com.tradr.springboot.view.userclasses.User;
+import com.tradr.springboot.view.userclasses.UserAuthKey;
+import com.tradr.springboot.view.userclasses.UserLoginDetails;
 import org.springframework.stereotype.Service;
 import services.utils.DatabaseVerification;
 import services.utils.HashUtils;
