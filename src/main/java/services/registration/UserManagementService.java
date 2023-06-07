@@ -17,7 +17,7 @@ import java.util.concurrent.CompletableFuture;
 @Service
 public class UserManagementService {
 
-    public boolean isAuthKeyValid(UserAuthKey authKey) throws SQLException {
+    public boolean isAuthKeyValid(UserAuthKey authKey) {
 
         CompletableFuture<Boolean> isAuthKeyValidCompletableFuture = CompletableFuture.supplyAsync(() -> {
             try (
@@ -90,7 +90,7 @@ public class UserManagementService {
         }
     }
 
-    public PublicUserDetailsResponse getUser(UserLoginDetails userLoginDetails) throws Exception {
+    public PublicUserDetailsResponse getUser(UserLoginDetails userLoginDetails) {
 
         PublicUserDetailsResponse publicUserDetailsResponse = new PublicUserDetailsResponse();
         publicUserDetailsResponse.setPublicUserQueryResponseStatus(UserEnums.LOGIN_FAILED);
@@ -170,14 +170,14 @@ public class UserManagementService {
         return userExistCompletableFuture.join();
     }
 
-    public boolean insertUser(User userToInsert) throws SQLException, NoSuchAlgorithmException {
+    public boolean insertUser(User userToInsert) {
 
         CompletableFuture<Boolean> insertUserCompletableFuture = CompletableFuture.supplyAsync(() -> {
 
             try (
                     Connection conn = DatabaseVerification.getConnection();
                     PreparedStatement statement = conn.prepareStatement(
-                            "INSERT INTO users (userName, firstName, lastName, email, hash, salt, authKey, authKeyExpiry, dob, avatar, uuid, registrationDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            "INSERT INTO users (userName, firstName, lastName, email, hash, salt, authKey, authKeyExpiry, dob, avatar, uuid, ownedStoreUUID, registrationDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             ) {
                 String salt = HashUtils.generateSalt();
                 String hash = HashUtils.hashWithSalt(userToInsert.getPassword(), salt);
@@ -200,7 +200,8 @@ public class UserManagementService {
                 }
 
                 statement.setString(11, HashUtils.generateUUID());
-                statement.setString(12, userToInsert.getRegistrationDate());
+                statement.setString(12, "null");
+                statement.setString(13, userToInsert.getRegistrationDate());
 
                 int rowsInserted = statement.executeUpdate();
                 return rowsInserted > 0;
@@ -211,6 +212,25 @@ public class UserManagementService {
 
         return insertUserCompletableFuture.join();
 
+    }
+
+    public boolean updateUserOwnedStoreUUID(String ownedStoreUUID, String ownUUID) {
+
+        CompletableFuture<Boolean> updateUserOwnedStoreUUIDCompletableFuture = CompletableFuture.supplyAsync(() -> {
+            try (
+                    Connection conn = DatabaseVerification.getConnection();
+                    PreparedStatement statement = conn.prepareStatement(
+                            "UPDATE users SET ownedStoreUUID = '" + ownedStoreUUID + "' WHERE uuid = '" + ownUUID + "'");
+            ) {
+
+                int rs = statement.executeUpdate();
+                return rs > 0;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return updateUserOwnedStoreUUIDCompletableFuture.join();
     }
 
 }

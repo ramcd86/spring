@@ -2,20 +2,25 @@ package services.storemanagement;
 
 import com.tradr.springboot.view.storeclasses.*;
 import org.springframework.stereotype.Service;
+import services.registration.UserManagementService;
 import services.utils.DatabaseVerification;
 import services.utils.HashUtils;
+import services.utils.LoggingUtils;
 import services.utils.StoreEnums;
 
 import java.io.ByteArrayInputStream;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @Service
 public class StoreManagementService {
+
+    private final UserManagementService userManagementService;
+
+    public StoreManagementService(UserManagementService userManagementService) {
+        this.userManagementService = userManagementService;
+    }
 
     public boolean isUUIDValid(String uuid) throws Exception {
         try (
@@ -101,7 +106,10 @@ public class StoreManagementService {
                 }
 
                 int rowsInserted = statement.executeUpdate();
-                return (rowsInserted > 0) ? StoreEnums.STORE_INSERTED : StoreEnums.INSERTION_FAILED;
+
+                boolean userOwnedStoresUUIDUpdated = userManagementService.updateUserOwnedStoreUUID(storeOwnUUD, store.getParentUUID());
+
+                return (rowsInserted > 0 && userOwnedStoresUUIDUpdated) ? StoreEnums.STORE_INSERTED : StoreEnums.INSERTION_FAILED;
 
             } catch (SQLException e) {
                 return StoreEnums.INSERTION_FAILED;
@@ -141,6 +149,66 @@ public class StoreManagementService {
         });
 
         return prepareStoreItemsForInsertionCompletableFuture.join();
+    }
+
+    public StoreEnums deleteItem(String storeItemPublicId, String authKey) {
+
+        CompletableFuture<String> getUserChildStoreUUIDCompletableFuture = CompletableFuture.supplyAsync(() -> {
+            try (
+                    Connection conn = DatabaseVerification.getConnection();
+                    PreparedStatement statement = conn.prepareStatement(
+                            "SELECT * FROM users WHERE authKey = ?;");
+            ) {
+                statement.setString(1, authKey);
+                ResultSet rs = statement.executeQuery();
+                String ownedStoreUUID = "";
+
+                if (!rs.next()) {
+                    return ownedStoreUUID;
+                }
+
+                do {
+                    ownedStoreUUID = rs.getString("ownedStoreUUID");
+                } while (rs.next());
+
+                return ownedStoreUUID;
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        String userChildStoreUUID = getUserChildStoreUUIDCompletableFuture.join();
+
+        LoggingUtils.log(userChildStoreUUID);
+        LoggingUtils.log(storeItemPublicId);
+        LoggingUtils.log(authKey);
+
+
+        if (Objects.equals(userChildStoreUUID, "")) {
+            return StoreEnums.ITEM_DELETION_FAILED;
+        }
+
+        CompletableFuture<StoreEnums> deleteItemCompletableFuture = CompletableFuture.supplyAsync(() -> {
+            try (
+                    Connection conn = DatabaseVerification.getConnection();
+                    PreparedStatement statement = conn.prepareStatement(
+                            "DELETE FROM storeItems WHERE storeItemPublicId = ? AND parentUUID = ?;");
+            ) {
+
+                statement.setString(1, storeItemPublicId);
+                statement.setString(2, userChildStoreUUID);
+
+                int rowsDeleted = statement.executeUpdate();
+
+                return (rowsDeleted > 0) ? StoreEnums.ITEM_DELETED : StoreEnums.ITEM_DELETION_FAILED;
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return deleteItemCompletableFuture.join();
     }
 
     public StoreSummaryResponse getStoresListSummaryFromDatabase() throws SQLException {
@@ -224,7 +292,6 @@ public class StoreManagementService {
                 store.setAddressLine2(rs.getString("addressLine2"));
                 store.setAddressLine3(rs.getString("addressLine3"));
                 store.setPostcode(rs.getString("postcode"));
-                store.setParentUUID(rs.getString("parentUUID"));
                 store.setOwnUUID(rs.getString("ownUUID"));
                 store.setPublicStoreId(rs.getString("publicStoreID"));
                 store.setStoreItems(storeItems);

@@ -1,9 +1,6 @@
 package com.tradr.springboot.view.controllers;
 
-import com.tradr.springboot.view.storeclasses.Store;
-import com.tradr.springboot.view.storeclasses.StoreItemInsert;
-import com.tradr.springboot.view.storeclasses.StoreResponse;
-import com.tradr.springboot.view.storeclasses.StoreSummaryResponse;
+import com.tradr.springboot.view.storeclasses.*;
 import com.tradr.springboot.view.userclasses.UserAuthKey;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import services.registration.UserManagementService;
 import services.storemanagement.StoreManagementService;
+import services.utils.LoggingUtils;
 import services.utils.StoreEnums;
 
 import java.sql.SQLException;
@@ -30,7 +28,7 @@ public class StoreController {
     }
 
     @PostMapping("create-store")
-    public ResponseEntity<StoreEnums> insertStore(@RequestBody Store storeToBeInserted) throws SQLException {
+    public ResponseEntity<StoreEnums> insertStore(@RequestBody Store storeToBeInserted) {
         StoreEnums resultFromService = storeManagementService.insertStore(storeToBeInserted);
 
         switch (resultFromService) {
@@ -45,8 +43,20 @@ public class StoreController {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(StoreEnums.INSERTION_FAILED);
     }
 
+    @GetMapping("get-stores-list")
+    public ResponseEntity<StoreSummaryResponse> getStoresListSummary() throws SQLException {
+        StoreSummaryResponse storeSummaryResponse = storeManagementService.getStoresListSummaryFromDatabase();
+        return ResponseEntity.ok(storeSummaryResponse);
+    }
+
+    @GetMapping("get-store/{storeId}")
+    public ResponseEntity<StoreResponse> getIndividualStore(@PathVariable("storeId") String storeId) throws SQLException {
+        StoreResponse storeResponse = storeManagementService.getIndividualStore(storeId);
+        return ResponseEntity.ok(storeResponse);
+    }
+
     @PostMapping("insert-item")
-    public ResponseEntity<StoreEnums> insertItemIntoExistingStore(@RequestBody StoreItemInsert itemToBeInserted) throws SQLException {
+    public ResponseEntity<StoreEnums> insertItemIntoExistingStore(@RequestBody StoreItemInsert itemToBeInserted) {
 
         UserAuthKey authKey = new UserAuthKey();
         authKey.setAuthKey(itemToBeInserted.getAuthKey());
@@ -64,16 +74,25 @@ public class StoreController {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(StoreEnums.ITEM_INSERTION_FAILED);
     }
 
-    @GetMapping("get-stores-list")
-    public ResponseEntity<StoreSummaryResponse> getStoresListSummary() throws SQLException {
-        StoreSummaryResponse storeSummaryResponse = storeManagementService.getStoresListSummaryFromDatabase();
-        return ResponseEntity.ok(storeSummaryResponse);
-    }
+    @PostMapping("delete-item")
+    public ResponseEntity<StoreEnums> insertItemIntoExistingStore(@RequestBody StoreItemDeletion itemToBeDeleted) {
 
-    @GetMapping("get-store/{storeId}")
-    public ResponseEntity<StoreResponse> getIndividualStore(@PathVariable("storeId") String storeId) throws SQLException {
-        StoreResponse storeResponse = storeManagementService.getIndividualStore(storeId);
-        return ResponseEntity.ok(storeResponse);
+        LoggingUtils.log(itemToBeDeleted.toString());
+
+        UserAuthKey authKey = new UserAuthKey();
+        authKey.setAuthKey(itemToBeDeleted.getAuthKey());
+
+        if (!userManagementService.isAuthKeyValid(authKey)) {
+            return ResponseEntity.badRequest().body(StoreEnums.ITEM_DELETION_FAILED);
+        }
+
+        StoreEnums itemInsertionState = storeManagementService.deleteItem(itemToBeDeleted.getStoreItemPublicId(), itemToBeDeleted.getAuthKey());
+
+        if (itemInsertionState == StoreEnums.ITEM_DELETED) {
+            return ResponseEntity.status(HttpStatus.OK).body(StoreEnums.ITEM_DELETED);
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(StoreEnums.ITEM_DELETION_FAILED);
     }
 
 }

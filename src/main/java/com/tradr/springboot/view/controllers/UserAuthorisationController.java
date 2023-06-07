@@ -73,7 +73,9 @@ public class UserAuthorisationController {
                 Object fieldValue = field.get(user);
                 if (!field.getName().equals("authKey")
                         && !field.getName().equals("authKeyExpiry")
-                        && !field.getName().equals("avatar")) {
+                        && !field.getName().equals("avatar")
+                        && !field.getName().equals("uuid")
+                        && !field.getName().equals("ownedStoreUUID")) {
                     if (fieldValue == null) {
                         failureReasons.add(StaticMaps.registrationFailures.get(field.getName()));
                     }

@@ -50,6 +50,7 @@ public class DatabaseVerification {
                 "    dob VARCHAR(50) NOT NULL,\n" +
                 "    avatar BLOB,\n " +
                 "    uuid VARCHAR(100) NOT NULL,\n" +
+                "    ownedStoreUUID VARCHAR(100) NOT NULL,\n" +
                 "    registrationDate VARCHAR(50) NOT NULL\n" +
                 ");";
 

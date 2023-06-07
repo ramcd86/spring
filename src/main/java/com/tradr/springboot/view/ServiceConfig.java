@@ -16,7 +16,8 @@ public class ServiceConfig {
 
     @Bean
     public StoreManagementService storeManagementService() {
-        return new StoreManagementService();
+        UserManagementService userManagementService = new UserManagementService();
+        return new StoreManagementService(userManagementService);
     }
 
     @Bean
