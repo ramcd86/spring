@@ -17,7 +17,7 @@ import java.util.concurrent.CompletableFuture;
 @Service
 public class StoreManagementService {
 
-    public boolean isUUIDValid(String uuid) throws Exception, SQLException {
+    public boolean isUUIDValid(String uuid) throws Exception {
         try (
                 Connection conn = DatabaseVerification.getConnection();
                 PreparedStatement statement = conn.prepareStatement(
