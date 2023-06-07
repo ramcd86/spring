@@ -1,14 +1,12 @@
 package com.tradr.springboot.view;
 
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import services.utils.DatabaseVerification;
 
 import java.sql.SQLException;
 
 @SpringBootApplication
-@EnableAutoConfiguration
 public class Application {
 
 
