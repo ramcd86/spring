@@ -4,43 +4,47 @@ import org.springframework.stereotype.Service;
 
 import java.sql.*;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class ImageProcessorService {
 
-    public byte[] getStoreImage(String imageType, String publicStoreId) throws SQLException {
+    public byte[] getStoreImage(String imageType, String publicStoreId) {
 
-        byte[] image;
-        String storeImageQueryType = "";
+        CompletableFuture<byte[]> getStoreImageCompletableFuture = CompletableFuture.supplyAsync(() -> {
 
-        if (Objects.equals(imageType, "avatar")) {
-            storeImageQueryType = "storeAvatar";
-        }
-        if (Objects.equals(imageType, "banner")) {
-            storeImageQueryType = "storeBanner";
-        }
+            String storeImageQueryType = "";
 
-        try (
-                Connection conn = DatabaseVerification.getConnection();
-                PreparedStatement statement = conn.prepareStatement("SELECT " + storeImageQueryType + " FROM stores WHERE publicStoreId = ?");
-        ) {
-
-            statement.setString(1, publicStoreId);
-            ResultSet rs = statement.executeQuery();
-
-            if (!rs.next()) {
-                throw new RuntimeException("No such image");
+            if (Objects.equals(imageType, "avatar")) {
+                storeImageQueryType = "storeAvatar";
+            }
+            if (Objects.equals(imageType, "banner")) {
+                storeImageQueryType = "storeBanner";
             }
 
+            try (
+                    Connection conn = DatabaseVerification.getConnection();
+                    PreparedStatement statement = conn.prepareStatement("SELECT " + storeImageQueryType + " FROM stores WHERE publicStoreId = ?");
+            ) {
 
-            Blob imageData = rs.getBlob(storeImageQueryType);
-            image = imageData.getBytes(1, (int) imageData.length());
+                statement.setString(1, publicStoreId);
+                ResultSet rs = statement.executeQuery();
 
+                if (!rs.next()) {
+                    throw new RuntimeException("No such image");
+                }
 
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        return image;
+                Blob imageData = rs.getBlob(storeImageQueryType);
+
+                return imageData.getBytes(1, (int) imageData.length());
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+
+        });
+
+        return getStoreImageCompletableFuture.join();
     }
 
 }

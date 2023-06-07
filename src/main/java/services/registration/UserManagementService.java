@@ -128,6 +128,7 @@ public class UserManagementService {
                 userToReturn.setDob(rs.getString("dob"));
                 userToReturn.setAuthKey(validatedAuthKey);
                 userToReturn.setRegistrationDate(rs.getString("registrationDate"));
+                userToReturn.setUuid(rs.getString("uuid"));
 
                 Blob avatarAsBlob = rs.getBlob("avatar");
                 if (avatarAsBlob != null) {

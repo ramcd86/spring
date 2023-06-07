@@ -14,4 +14,5 @@ public class PublicUserDetails {
     private String registrationDate;
     private String userAvatar;
     private String authKey;
+    private String uuid;
 }

@@ -4,6 +4,7 @@ import com.tradr.springboot.view.storeclasses.Store;
 import com.tradr.springboot.view.storeclasses.StoreItemInsert;
 import com.tradr.springboot.view.storeclasses.StoreResponse;
 import com.tradr.springboot.view.storeclasses.StoreSummaryResponse;
+import com.tradr.springboot.view.userclasses.UserAuthKey;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -44,27 +45,21 @@ public class StoreController {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(StoreEnums.INSERTION_FAILED);
     }
 
-    @PostMapping("insert-items")
-    public ResponseEntity<StoreEnums> insertItemIntoExistingStore(@RequestBody StoreItemInsert itemsToBeInserted) {
+    @PostMapping("insert-item")
+    public ResponseEntity<StoreEnums> insertItemIntoExistingStore(@RequestBody StoreItemInsert itemToBeInserted) throws SQLException {
 
-//        CompletableFuture<Boolean> result = invokeServiceMethod(ServiceQueryEnum.VALIDATE_USER_UUID, itemsToBeInserted, Boolean.class);
+        UserAuthKey authKey = new UserAuthKey();
+        authKey.setAuthKey(itemToBeInserted.getAuthKey());
 
-//        if (!result.join()) {
-//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(StoreEnums.ITEM_INSERTION_FAILED);
-//        }
-//
-//        StoreEnums storeRegistrationStatus = insertUserQuery.join();
-//
-//        LoggingUtils.log(storeRegistrationStatus);
-//
-//        switch (storeRegistrationStatus) {
-//            case INVALID_UUID:
-//                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid UUID.");
-//            case INSERTION_FAILED:
-//                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Unknown Error.");
-//            case STORE_INSERTED:
-//                return ResponseEntity.status(HttpStatus.OK).body("Store inserted.");
-//        }
+        if (!userManagementService.isAuthKeyValid(authKey)) {
+            return ResponseEntity.badRequest().body(StoreEnums.ITEM_INSERTION_FAILED);
+        }
+
+        StoreEnums itemInsertionState = storeManagementService.prepareStoreItemsForInsertion(itemToBeInserted.getStoreItem(), itemToBeInserted.getParentUUID());
+
+        if (itemInsertionState == StoreEnums.ITEM_INSERTED) {
+            return ResponseEntity.status(HttpStatus.OK).body(StoreEnums.ITEM_INSERTED);
+        }
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(StoreEnums.ITEM_INSERTION_FAILED);
     }

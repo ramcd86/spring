@@ -4,7 +4,6 @@ import com.tradr.springboot.view.storeclasses.*;
 import org.springframework.stereotype.Service;
 import services.utils.DatabaseVerification;
 import services.utils.HashUtils;
-import services.utils.LoggingUtils;
 import services.utils.StoreEnums;
 
 import java.io.ByteArrayInputStream;
@@ -34,7 +33,7 @@ public class StoreManagementService {
         }
     }
 
-    public StoreEnums insertStore(Store store) throws SQLException {
+    public StoreEnums insertStore(Store store) {
 
         CompletableFuture<Boolean> validateUUID = CompletableFuture.supplyAsync(() -> {
             try {
@@ -101,18 +100,8 @@ public class StoreManagementService {
                     statement.setNull(15, Types.BLOB);
                 }
 
-                CompletableFuture<StoreEnums> insertStoreItems = CompletableFuture.supplyAsync(() -> {
-                    try {
-                        return prepareStoreItemsForInsertion(store.getStoreItems(), storeOwnUUD);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-
-                StoreEnums insertStoreItemsJoined = insertStoreItems.join();
-
                 int rowsInserted = statement.executeUpdate();
-                return (rowsInserted > 0 && insertStoreItemsJoined == StoreEnums.ITEM_INSERTED) ? StoreEnums.STORE_INSERTED : StoreEnums.INSERTION_FAILED;
+                return (rowsInserted > 0) ? StoreEnums.STORE_INSERTED : StoreEnums.INSERTION_FAILED;
 
             } catch (SQLException e) {
                 return StoreEnums.INSERTION_FAILED;
@@ -123,17 +112,15 @@ public class StoreManagementService {
 
     }
 
-    public StoreEnums prepareStoreItemsForInsertion(List<StoreItem> storeItemsList, String parentUUID) throws SQLException {
+    public StoreEnums prepareStoreItemsForInsertion(StoreItem storeItem, String parentUUID) {
 
-        for (StoreItem storeItem : storeItemsList) {
+        CompletableFuture<StoreEnums> prepareStoreItemsForInsertionCompletableFuture = CompletableFuture.supplyAsync(() -> {
             try (
                     Connection conn = DatabaseVerification.getConnection();
                     PreparedStatement statement = conn.prepareStatement(
                             "INSERT INTO storeitems (storeItemName, parentUUID, storeItemImage, storeItemDescription, storeItemPrice, storeItemPublicId) VALUES " +
                                     "(?, ?, ?, ?, ?, ?)");
             ) {
-
-                LoggingUtils.log(storeItem.toString());
 
                 ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(storeItem.getStoreItemImage()));
                 statement.setString(1, storeItem.getStoreItemName());
@@ -151,8 +138,9 @@ public class StoreManagementService {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-        }
-        return StoreEnums.ITEM_INSERTION_FAILED;
+        });
+
+        return prepareStoreItemsForInsertionCompletableFuture.join();
     }
 
     public StoreSummaryResponse getStoresListSummaryFromDatabase() throws SQLException {
