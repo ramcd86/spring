@@ -4,15 +4,21 @@ import java.util.HashMap;
 
 public class StaticMaps {
 
-    private static HashMap<String, String> countryMap;
-
-    private static HashMap<String, String> searchType;
-
-    private static HashMap<String, String> storeThemes;
-
-    private static HashMap<String, String> storeTags;
+    public static HashMap<String, String> countryMap;
+    public static HashMap<String, String> searchType;
+    public static HashMap<String, String> storeThemes;
+    public static HashMap<String, String> storeTags;
+    public static HashMap<String, RegistrationFailureEnums> registrationFailures;
 
     static {
+        registrationFailures = new HashMap<String, RegistrationFailureEnums>();
+        registrationFailures.put("userName", RegistrationFailureEnums.USERNAME_EMPTY);
+        registrationFailures.put("firstName", RegistrationFailureEnums.FIRSTNAME_EMPTY);
+        registrationFailures.put("lastName", RegistrationFailureEnums.LASTNAME_EMPTY);
+        registrationFailures.put("email", RegistrationFailureEnums.EMAIL_EMPTY);
+        registrationFailures.put("password", RegistrationFailureEnums.PASSWORD_EMPTY);
+        registrationFailures.put("dob", RegistrationFailureEnums.DOB_EMPTY);
+
         storeTags = new HashMap<String, String>();
         storeTags.put("METAL_WORKING", "metal_working");
         storeTags.put("WOOD_WORKING", "wood_working");
@@ -322,6 +328,15 @@ public class StaticMaps {
         countryMap.put("ZMB", "Zambia");
         countryMap.put("ZWE", "Zimbabwe");
         countryMap.put("ALA", "Åland Islands");
+    }
+
+    public static enum RegistrationFailureEnums {
+        USERNAME_EMPTY,
+        FIRSTNAME_EMPTY,
+        LASTNAME_EMPTY,
+        EMAIL_EMPTY,
+        PASSWORD_EMPTY,
+        DOB_EMPTY
     }
 
 }

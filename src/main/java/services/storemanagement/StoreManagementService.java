@@ -48,76 +48,78 @@ public class StoreManagementService {
             return StoreEnums.INVALID_UUID;
         }
 
-        String craftTagsAsString = String.join(",", store.getCraftTags());
-        String storeOwnUUD = HashUtils.generateUUID();
+        CompletableFuture<StoreEnums> insertStoreCompletableFuture = CompletableFuture.supplyAsync(() -> {
+            String craftTagsAsString = String.join(",", store.getCraftTags());
+            String storeOwnUUD = HashUtils.generateUUID();
+            try (
+                    Connection conn = DatabaseVerification.getConnection();
+                    PreparedStatement statement = conn.prepareStatement(
+                            "INSERT INTO stores (" +
+                                    "storeTitle, " +
+                                    "storeDescription, " +
+                                    "canMessage, " +
+                                    "isPrivate, " +
+                                    "storeTheme, " +
+                                    "craftTags, " +
+                                    "addressLine1, " +
+                                    "addressLine2, " +
+                                    "addressLine3, " +
+                                    "postcode, " +
+                                    "parentUUID, " +
+                                    "ownUUID, " +
+                                    "publicStoreId, " +
+                                    "storeAvatar, " +
+                                    "storeBanner) VALUES " +
+                                    "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            ) {
 
 
-        try (
-                Connection conn = DatabaseVerification.getConnection();
-                PreparedStatement statement = conn.prepareStatement(
-                        "INSERT INTO stores (" +
-                                "storeTitle, " +
-                                "storeDescription, " +
-                                "canMessage, " +
-                                "isPrivate, " +
-                                "storeTheme, " +
-                                "craftTags, " +
-                                "addressLine1, " +
-                                "addressLine2, " +
-                                "addressLine3, " +
-                                "postcode, " +
-                                "parentUUID, " +
-                                "ownUUID, " +
-                                "publicStoreId, " +
-                                "storeAvatar, " +
-                                "storeBanner) VALUES " +
-                                "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        ) {
+                ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(store.getStoreBanner()));
+                statement.setString(1, store.getStoreTitle());
+                statement.setString(2, store.getStoreDescription());
+                statement.setBoolean(3, store.isCanMessage());
+                statement.setBoolean(4, store.isPrivate());
+                statement.setString(5, store.getStoreTheme());
+                statement.setString(6, craftTagsAsString);
+                statement.setString(7, store.getAddressLine1());
+                statement.setString(8, store.getAddressLine2());
+                statement.setString(9, store.getAddressLine3());
+                statement.setString(10, store.getPostcode());
+                statement.setString(11, store.getParentUUID());
+                statement.setString(12, storeOwnUUD);
+                statement.setString(13, HashUtils.generatePublicId(store.getStoreTitle()));
 
-
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(store.getStoreBanner()));
-            statement.setString(1, store.getStoreTitle());
-            statement.setString(2, store.getStoreDescription());
-            statement.setBoolean(3, store.isCanMessage());
-            statement.setBoolean(4, store.isPrivate());
-            statement.setString(5, store.getStoreTheme());
-            statement.setString(6, craftTagsAsString);
-            statement.setString(7, store.getAddressLine1());
-            statement.setString(8, store.getAddressLine2());
-            statement.setString(9, store.getAddressLine3());
-            statement.setString(10, store.getPostcode());
-            statement.setString(11, store.getParentUUID());
-            statement.setString(12, storeOwnUUD);
-            statement.setString(13, HashUtils.generatePublicId(store.getStoreTitle()));
-
-            if (store.getStoreAvatar() != null) {
-                statement.setBinaryStream(14, inputStream, inputStream.available());
-            } else {
-                statement.setNull(14, Types.BLOB);
-            }
-
-            if (store.getStoreBanner() != null) {
-                statement.setBinaryStream(15, inputStream, inputStream.available());
-            } else {
-                statement.setNull(15, Types.BLOB);
-            }
-
-            CompletableFuture<StoreEnums> insertStoreItems = CompletableFuture.supplyAsync(() -> {
-                try {
-                    return prepareStoreItemsForInsertion(store.getStoreItems(), storeOwnUUD);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+                if (store.getStoreAvatar() != null) {
+                    statement.setBinaryStream(14, inputStream, inputStream.available());
+                } else {
+                    statement.setNull(14, Types.BLOB);
                 }
-            });
 
-            StoreEnums insertStoreItemsJoined = insertStoreItems.join();
+                if (store.getStoreBanner() != null) {
+                    statement.setBinaryStream(15, inputStream, inputStream.available());
+                } else {
+                    statement.setNull(15, Types.BLOB);
+                }
 
-            int rowsInserted = statement.executeUpdate();
-            return (rowsInserted > 0 && insertStoreItemsJoined == StoreEnums.ITEM_INSERTED) ? StoreEnums.STORE_INSERTED : StoreEnums.INSERTION_FAILED;
+                CompletableFuture<StoreEnums> insertStoreItems = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return prepareStoreItemsForInsertion(store.getStoreItems(), storeOwnUUD);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
 
-        } catch (SQLException e) {
-            return StoreEnums.INSERTION_FAILED;
-        }
+                StoreEnums insertStoreItemsJoined = insertStoreItems.join();
+
+                int rowsInserted = statement.executeUpdate();
+                return (rowsInserted > 0 && insertStoreItemsJoined == StoreEnums.ITEM_INSERTED) ? StoreEnums.STORE_INSERTED : StoreEnums.INSERTION_FAILED;
+
+            } catch (SQLException e) {
+                return StoreEnums.INSERTION_FAILED;
+            }
+        });
+
+        return insertStoreCompletableFuture.join();
 
     }
 
@@ -154,122 +156,140 @@ public class StoreManagementService {
     }
 
     public StoreSummaryResponse getStoresListSummaryFromDatabase() throws SQLException {
-        StoreSummaryResponse response = new StoreSummaryResponse();
-        response.setStoreSummaryQueryStatus(StoreEnums.STORE_LIST_EMPTY);
-        List<StoreSummary> storeSummaries = new ArrayList<StoreSummary>();
-        try (
-                Connection conn = DatabaseVerification.getConnection();
-                PreparedStatement statement = conn.prepareStatement("SELECT storeTitle, storeDescription, storeTheme, ownUUID, storeBanner, publicStoreId FROM stores");
-                ResultSet rs = statement.executeQuery();
-        ) {
-            if (!rs.next()) {
-                return response;
+
+        CompletableFuture<StoreSummaryResponse> storeSummaryResponseCompletableFuture = CompletableFuture.supplyAsync(() -> {
+            StoreSummaryResponse response = new StoreSummaryResponse();
+            response.setStoreSummaryQueryStatus(StoreEnums.STORE_LIST_EMPTY);
+            List<StoreSummary> storeSummaries = new ArrayList<StoreSummary>();
+            try (
+                    Connection conn = DatabaseVerification.getConnection();
+                    PreparedStatement statement = conn.prepareStatement("SELECT storeTitle, storeDescription, storeTheme, ownUUID, storeBanner, publicStoreId FROM stores");
+                    ResultSet rs = statement.executeQuery();
+            ) {
+                if (!rs.next()) {
+                    return response;
+                }
+
+                do {
+                    response.setStoreSummaryQueryStatus(StoreEnums.STORE_LIST_POPULATED);
+                    StoreSummary storeSummary = new StoreSummary();
+                    String storeTitle = rs.getString("storeTitle");
+                    String storeDescription = rs.getString("storeDescription");
+                    String ownUUID = rs.getString("ownUUID");
+                    String storeTheme = rs.getString("storeTheme");
+                    String publicStoreId = rs.getString("publicStoreId");
+
+                    storeSummary.setStoreTitle(storeTitle);
+                    storeSummary.setStoreDescription(storeDescription);
+                    storeSummary.setOwnUUID(ownUUID);
+                    storeSummary.setStoreTheme(storeTheme);
+                    storeSummary.setPublicStoreId(publicStoreId);
+                    storeSummaries.add(storeSummary);
+                } while (rs.next());
+
+                response.setStores(storeSummaries);
+
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
 
-            do {
-                response.setStoreSummaryQueryStatus(StoreEnums.STORE_LIST_POPULATED);
-                StoreSummary storeSummary = new StoreSummary();
-                String storeTitle = rs.getString("storeTitle");
-                String storeDescription = rs.getString("storeDescription");
-                String ownUUID = rs.getString("ownUUID");
-                String storeTheme = rs.getString("storeTheme");
-                String publicStoreId = rs.getString("publicStoreId");
+            return response;
+        });
 
-                storeSummary.setStoreTitle(storeTitle);
-                storeSummary.setStoreDescription(storeDescription);
-                storeSummary.setOwnUUID(ownUUID);
-                storeSummary.setStoreTheme(storeTheme);
-                storeSummary.setPublicStoreId(publicStoreId);
-                storeSummaries.add(storeSummary);
-            } while (rs.next());
-
-            response.setStores(storeSummaries);
-
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
-        return response;
+        return storeSummaryResponseCompletableFuture.join();
     }
-
 
     public StoreResponse getIndividualStore(String storeId) throws SQLException {
 
-        StoreResponse response = new StoreResponse();
-        response.setStoreQueryResponseStatus(StoreEnums.STORE_EMPTY);
+        CompletableFuture<StoreResponse> getIndividualStoreResponseCompletableFuture = CompletableFuture.supplyAsync(() -> {
+            StoreResponse response = new StoreResponse();
+            response.setStoreQueryResponseStatus(StoreEnums.STORE_EMPTY);
 
-        try (
-                Connection conn = DatabaseVerification.getConnection();
-                PreparedStatement statement = conn.prepareStatement("SELECT * FROM stores WHERE publicStoreId = ?");
-        ) {
+            try (
+                    Connection conn = DatabaseVerification.getConnection();
+                    PreparedStatement statement = conn.prepareStatement("SELECT * FROM stores WHERE publicStoreId = ?");
+            ) {
 
-            statement.setString(1, storeId);
-            ResultSet rs = statement.executeQuery();
+                statement.setString(1, storeId);
+                ResultSet rs = statement.executeQuery();
 
-            if (!rs.next()) {
-                throw new RuntimeException("No such store");
+                if (!rs.next()) {
+                    return response;
+                }
+
+                Store store = new Store();
+
+                response.setStoreQueryResponseStatus(StoreEnums.STORE_POPULATED);
+                String[] craftingTags = rs.getString("craftTags").split(",");
+
+                List<String> craftingTagsAsList = new ArrayList<>(Arrays.asList(craftingTags));
+                List<StoreItem> storeItems = getStoreItemsForIndividualStore(rs.getString("ownUUID"));
+
+                store.setStoreTitle(rs.getString("storeTitle"));
+                store.setStoreDescription(rs.getString("storeDescription"));
+                store.setCanMessage(rs.getBoolean("canMessage"));
+                store.setPrivate(rs.getBoolean("isPrivate"));
+                store.setStoreTheme(rs.getString("storeTheme"));
+                store.setCraftTags(craftingTagsAsList);
+                store.setAddressLine1(rs.getString("addressLine1"));
+                store.setAddressLine2(rs.getString("addressLine2"));
+                store.setAddressLine3(rs.getString("addressLine3"));
+                store.setPostcode(rs.getString("postcode"));
+                store.setParentUUID(rs.getString("parentUUID"));
+                store.setOwnUUID(rs.getString("ownUUID"));
+                store.setPublicStoreId(rs.getString("publicStoreID"));
+                store.setStoreItems(storeItems);
+
+                response.setStore(store);
+
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
 
-            Store store = new Store();
-            response.setStoreQueryResponseStatus(StoreEnums.STORE_POPULATED);
-            String[] craftingTags = rs.getString("craftingTags").split(",");
-            List<String> craftingTagsAsList = new ArrayList<>(Arrays.asList(craftingTags));
-            List<StoreItem> storeItems = getStoreItemsForIndividualStore(rs.getString("ownUUID"));
+            return response;
+        });
 
-            store.setStoreTitle(rs.getString("storeTitle"));
-            store.setStoreDescription(rs.getString("storeDescription"));
-            store.setCanMessage(rs.getBoolean("canMessage"));
-            store.setPrivate(rs.getBoolean("isPrivate"));
-            store.setStoreTheme(rs.getString("storeTheme"));
-            store.setCraftTags(craftingTagsAsList);
-            store.setAddressLine1(rs.getString("addressLine1"));
-            store.setAddressLine2(rs.getString("addressLine2"));
-            store.setAddressLine3(rs.getString("addressLine3"));
-            store.setPostcode(rs.getString("postcode"));
-            store.setParentUUID(rs.getString("parentUUID"));
-            store.setOwnUUID(rs.getString("ownUUID"));
-            store.setPublicStoreId(rs.getString("publicStoreID"));
-
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
-        return response;
+        return getIndividualStoreResponseCompletableFuture.join();
     }
 
-    private List<StoreItem> getStoreItemsForIndividualStore(String parentUUID) {
+    private List<StoreItem> getStoreItemsForIndividualStore(String parentUUID) throws SQLException {
 
-        List<StoreItem> storeItems = new ArrayList<StoreItem>();
+        List<StoreItem> storeItemsFinal = new ArrayList<StoreItem>();
 
-        try (
-                Connection conn = DatabaseVerification.getConnection();
-                PreparedStatement statement = conn.prepareStatement("SELECT * FROM storeItems WHERE parentUUID = ?");
-        ) {
+        CompletableFuture<List<StoreItem>> getStoreItemsForIndividualStoreCompletableFuture = CompletableFuture.supplyAsync(() -> {
+            List<StoreItem> storeItems = new ArrayList<StoreItem>();
+            try (
+                    Connection conn = DatabaseVerification.getConnection();
+                    PreparedStatement statement = conn.prepareStatement("SELECT * FROM storeItems WHERE parentUUID = ?");
+            ) {
+                statement.setString(1, parentUUID);
+                ResultSet rs = statement.executeQuery();
 
-            statement.setString(1, parentUUID);
-            ResultSet rs = statement.executeQuery();
+                if (!rs.next()) {
+                    return storeItems;
+                }
 
-            if (!rs.next()) {
-                throw new RuntimeException("No such items");
+                do {
+                    StoreItem storeItem = new StoreItem();
+                    storeItem.setStoreItemName(rs.getString("storeItemName"));
+                    storeItem.setStoreParentUUID(rs.getString("parentUUID"));
+                    storeItem.setStoreItemDescription(rs.getString("storeItemDescription"));
+                    storeItem.setStoreItemPrice(rs.getString("storeItemPrice"));
+                    storeItem.setStoreItemPublicId(rs.getString("storeItemPublicId"));
+                    storeItems.add(storeItem);
+                } while (rs.next());
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
+            return storeItems;
+        });
 
-            do {
-                StoreItem storeItem = new StoreItem();
-                storeItem.setStoreItemName(rs.getString("storeItemName"));
-                storeItem.setStoreParentUUID(rs.getString("parentUUID"));
-                storeItem.setStoreItemDescription(rs.getString("storeItemDescription"));
-                storeItem.setStoreItemPrice(rs.getString("storeItemPrice"));
-                storeItem.setStoreItemPublicId(rs.getString("storeItemPublicId"));
-                storeItems.add(storeItem);
-            } while (rs.next());
+        storeItemsFinal = getStoreItemsForIndividualStoreCompletableFuture.join();
 
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
-        return storeItems;
+        return storeItemsFinal;
     }
 
 }
