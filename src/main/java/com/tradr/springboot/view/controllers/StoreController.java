@@ -14,8 +14,6 @@ import services.storemanagement.StoreManagementService;
 import services.utils.LoggingUtils;
 import services.utils.StoreEnums;
 
-import java.sql.SQLException;
-
 @Controller
 public class StoreController {
 
@@ -27,6 +25,7 @@ public class StoreController {
         this.userManagementService = userManagementService;
     }
 
+    // @TODO AUTHORISE USER!
     @PostMapping("create-store")
     public ResponseEntity<StoreEnums> insertStore(@RequestBody Store storeToBeInserted) {
         StoreEnums resultFromService = storeManagementService.insertStore(storeToBeInserted);
@@ -44,13 +43,13 @@ public class StoreController {
     }
 
     @GetMapping("get-stores-list")
-    public ResponseEntity<StoreSummaryResponse> getStoresListSummary() throws SQLException {
+    public ResponseEntity<StoreSummaryResponse> getStoresListSummary() {
         StoreSummaryResponse storeSummaryResponse = storeManagementService.getStoresListSummaryFromDatabase();
         return ResponseEntity.ok(storeSummaryResponse);
     }
 
     @GetMapping("get-store/{storeId}")
-    public ResponseEntity<StoreResponse> getIndividualStore(@PathVariable("storeId") String storeId) throws SQLException {
+    public ResponseEntity<StoreResponse> getIndividualStore(@PathVariable("storeId") String storeId) {
         StoreResponse storeResponse = storeManagementService.getIndividualStore(storeId);
         return ResponseEntity.ok(storeResponse);
     }
@@ -75,7 +74,7 @@ public class StoreController {
     }
 
     @PostMapping("delete-item")
-    public ResponseEntity<StoreEnums> insertItemIntoExistingStore(@RequestBody StoreItemDeletion itemToBeDeleted) {
+    public ResponseEntity<StoreEnums> deleteItemFromStore(@RequestBody StoreItemDeletion itemToBeDeleted) {
 
         LoggingUtils.log(itemToBeDeleted.toString());
 
@@ -93,6 +92,22 @@ public class StoreController {
         }
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(StoreEnums.ITEM_DELETION_FAILED);
+    }
+
+    @PostMapping("delete-store")
+    public ResponseEntity<StoreEnums> deleteStore(@RequestBody UserAuthKey authKey) {
+
+        if (!userManagementService.isAuthKeyValid(authKey)) {
+            return ResponseEntity.badRequest().body(StoreEnums.STORE_DELETION_FAILED);
+        }
+
+        StoreEnums itemInsertionState = storeManagementService.deleteStore(authKey);
+
+        if (itemInsertionState == StoreEnums.STORE_DELETION_SUCCESSFUL) {
+            return ResponseEntity.status(HttpStatus.OK).body(StoreEnums.STORE_DELETION_SUCCESSFUL);
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(StoreEnums.STORE_DELETION_FAILED);
     }
 
 }

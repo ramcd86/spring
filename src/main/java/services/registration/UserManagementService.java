@@ -233,4 +233,38 @@ public class UserManagementService {
         return updateUserOwnedStoreUUIDCompletableFuture.join();
     }
 
+    public String getUserOwnedStoreUUID(String authKey) {
+
+        CompletableFuture<String> getUserChildStoreUUIDCompletableFuture = CompletableFuture.supplyAsync(() -> {
+            try (
+                    Connection conn = DatabaseVerification.getConnection();
+                    PreparedStatement statement = conn.prepareStatement(
+                            "SELECT * FROM users WHERE authKey = ?;");
+            ) {
+                statement.setString(1, authKey);
+                ResultSet rs = statement.executeQuery();
+                String ownedStoreUUID = "";
+
+                if (!rs.next()) {
+                    return ownedStoreUUID;
+                }
+
+                do {
+                    ownedStoreUUID = rs.getString("ownedStoreUUID");
+                } while (rs.next());
+
+                return ownedStoreUUID;
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return getUserChildStoreUUIDCompletableFuture.join();
+
+    }
+
+    ;
+
+
 }

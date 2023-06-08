@@ -10,8 +10,6 @@ import services.utils.StaticMaps;
 import services.utils.UserEnums;
 
 import java.lang.reflect.Field;
-import java.security.NoSuchAlgorithmException;
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,19 +41,19 @@ public class UserAuthorisationController {
     }
 
     @PostMapping("auth")
-    public ResponseEntity<UserEnums> authoriseCurrentUser(@RequestBody UserAuthKey userAuthKey) throws Exception {
+    public ResponseEntity<UserEnums> authoriseCurrentUser(@RequestBody UserAuthKey userAuthKey) {
         boolean userIsAuthed = userManagementService.isAuthKeyValid(userAuthKey);
         return ResponseEntity.ok(userIsAuthed ? UserEnums.USER_AUTHORISED : UserEnums.USER_NOT_AUTHORISED);
     }
 
     @PostMapping("login")
-    public ResponseEntity<PublicUserDetailsResponse> userLogin(@RequestBody UserLoginDetails userLoginDetails) throws Exception {
+    public ResponseEntity<PublicUserDetailsResponse> userLogin(@RequestBody UserLoginDetails userLoginDetails) {
         PublicUserDetailsResponse validatedPublicUserDetails = userManagementService.getUser(userLoginDetails);
         return ResponseEntity.ok(validatedPublicUserDetails);
     }
 
     @PostMapping("register")
-    public ResponseEntity<UserRegistrationResponse> createNewUser(@RequestBody User user) throws SQLException, NoSuchAlgorithmException {
+    public ResponseEntity<UserRegistrationResponse> createNewUser(@RequestBody User user) {
 
         UserRegistrationResponse userRegistrationResponse = new UserRegistrationResponse();
         userRegistrationResponse.setUserRegistrationQueryStatus(UserEnums.REGISTRATION_FAILED);

@@ -1,7 +1,6 @@
 package services.utils;
 
 public enum UserEnums {
-    USER_INSERTED,
     USER_EXISTS,
     USER_AUTHORISED,
     USER_NOT_AUTHORISED,

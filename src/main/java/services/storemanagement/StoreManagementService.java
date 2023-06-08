@@ -1,11 +1,11 @@
 package services.storemanagement;
 
 import com.tradr.springboot.view.storeclasses.*;
+import com.tradr.springboot.view.userclasses.UserAuthKey;
 import org.springframework.stereotype.Service;
 import services.registration.UserManagementService;
 import services.utils.DatabaseVerification;
 import services.utils.HashUtils;
-import services.utils.LoggingUtils;
 import services.utils.StoreEnums;
 
 import java.io.ByteArrayInputStream;
@@ -151,67 +151,8 @@ public class StoreManagementService {
         return prepareStoreItemsForInsertionCompletableFuture.join();
     }
 
-    public StoreEnums deleteItem(String storeItemPublicId, String authKey) {
 
-        CompletableFuture<String> getUserChildStoreUUIDCompletableFuture = CompletableFuture.supplyAsync(() -> {
-            try (
-                    Connection conn = DatabaseVerification.getConnection();
-                    PreparedStatement statement = conn.prepareStatement(
-                            "SELECT * FROM users WHERE authKey = ?;");
-            ) {
-                statement.setString(1, authKey);
-                ResultSet rs = statement.executeQuery();
-                String ownedStoreUUID = "";
-
-                if (!rs.next()) {
-                    return ownedStoreUUID;
-                }
-
-                do {
-                    ownedStoreUUID = rs.getString("ownedStoreUUID");
-                } while (rs.next());
-
-                return ownedStoreUUID;
-
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-        String userChildStoreUUID = getUserChildStoreUUIDCompletableFuture.join();
-
-        LoggingUtils.log(userChildStoreUUID);
-        LoggingUtils.log(storeItemPublicId);
-        LoggingUtils.log(authKey);
-
-
-        if (Objects.equals(userChildStoreUUID, "")) {
-            return StoreEnums.ITEM_DELETION_FAILED;
-        }
-
-        CompletableFuture<StoreEnums> deleteItemCompletableFuture = CompletableFuture.supplyAsync(() -> {
-            try (
-                    Connection conn = DatabaseVerification.getConnection();
-                    PreparedStatement statement = conn.prepareStatement(
-                            "DELETE FROM storeItems WHERE storeItemPublicId = ? AND parentUUID = ?;");
-            ) {
-
-                statement.setString(1, storeItemPublicId);
-                statement.setString(2, userChildStoreUUID);
-
-                int rowsDeleted = statement.executeUpdate();
-
-                return (rowsDeleted > 0) ? StoreEnums.ITEM_DELETED : StoreEnums.ITEM_DELETION_FAILED;
-
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-        return deleteItemCompletableFuture.join();
-    }
-
-    public StoreSummaryResponse getStoresListSummaryFromDatabase() throws SQLException {
+    public StoreSummaryResponse getStoresListSummaryFromDatabase() {
 
         CompletableFuture<StoreSummaryResponse> storeSummaryResponseCompletableFuture = CompletableFuture.supplyAsync(() -> {
             StoreSummaryResponse response = new StoreSummaryResponse();
@@ -256,7 +197,7 @@ public class StoreManagementService {
         return storeSummaryResponseCompletableFuture.join();
     }
 
-    public StoreResponse getIndividualStore(String storeId) throws SQLException {
+    public StoreResponse getIndividualStore(String storeId) {
 
         CompletableFuture<StoreResponse> getIndividualStoreResponseCompletableFuture = CompletableFuture.supplyAsync(() -> {
             StoreResponse response = new StoreResponse();
@@ -345,6 +286,81 @@ public class StoreManagementService {
         storeItemsFinal = getStoreItemsForIndividualStoreCompletableFuture.join();
 
         return storeItemsFinal;
+    }
+
+    public StoreEnums deleteItem(String storeItemPublicId, String authKey) {
+
+        String userChildStoreUUID = userManagementService.getUserOwnedStoreUUID(authKey);
+
+        if (Objects.equals(userChildStoreUUID, "")) {
+            return StoreEnums.ITEM_DELETION_FAILED;
+        }
+
+        CompletableFuture<StoreEnums> deleteItemCompletableFuture = CompletableFuture.supplyAsync(() -> {
+            try (
+                    Connection conn = DatabaseVerification.getConnection();
+                    PreparedStatement statement = conn.prepareStatement(
+                            "DELETE FROM storeItems WHERE storeItemPublicId = ? AND parentUUID = ?;");
+            ) {
+
+                statement.setString(1, storeItemPublicId);
+                statement.setString(2, userChildStoreUUID);
+
+                int rowsDeleted = statement.executeUpdate();
+
+                return (rowsDeleted > 0) ? StoreEnums.ITEM_DELETED : StoreEnums.ITEM_DELETION_FAILED;
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return deleteItemCompletableFuture.join();
+    }
+
+    public StoreEnums deleteStore(UserAuthKey authKey) {
+
+        String userChildStoreUUID = userManagementService.getUserOwnedStoreUUID(authKey.getAuthKey());
+
+        CompletableFuture<StoreEnums> deleteStoreItemsFromStore = CompletableFuture.supplyAsync(() -> {
+            try (
+                    Connection conn = DatabaseVerification.getConnection();
+                    PreparedStatement statement = conn.prepareStatement(
+                            "DELETE FROM storeItems WHERE parentUUID = ?");
+            ) {
+
+                statement.setString(1, userChildStoreUUID);
+
+                int itemsDeleted = statement.executeUpdate();
+
+                return (itemsDeleted > 0) ? StoreEnums.ITEMS_DELETED : StoreEnums.ITEMS_DELETION_FAILED;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        // Might be used later?
+        StoreEnums itemsFromStoreDeleted = deleteStoreItemsFromStore.join();
+
+        CompletableFuture<StoreEnums> deleteIndividualStoreCompletableFuture = CompletableFuture.supplyAsync(() -> {
+            try (
+                    Connection conn = DatabaseVerification.getConnection();
+                    PreparedStatement statement = conn.prepareStatement(
+                            "DELETE FROM stores WHERE ownUUID = ?");
+            ) {
+
+                statement.setString(1, userChildStoreUUID);
+
+                int rowsDeleted = statement.executeUpdate();
+
+                return (rowsDeleted > 0) ? StoreEnums.STORE_DELETION_SUCCESSFUL : StoreEnums.STORE_DELETION_FAILED;
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return deleteIndividualStoreCompletableFuture.join();
     }
 
 }
