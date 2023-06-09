@@ -24,8 +24,7 @@ public class StoreController {
         this.storeManagementService = storeManagementService;
         this.userManagementService = userManagementService;
     }
-
-    // @TODO AUTHORISE USER!
+    
     @PostMapping("create-store")
     public ResponseEntity<StoreEnums> insertStore(@RequestBody Store storeToBeInserted) {
         StoreEnums resultFromService = storeManagementService.insertStore(storeToBeInserted);
@@ -37,6 +36,8 @@ public class StoreController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(StoreEnums.INSERTION_FAILED);
             case STORE_INSERTED:
                 return ResponseEntity.status(HttpStatus.OK).body(StoreEnums.STORE_INSERTED);
+            case STORE_CREATION_FAILED_STORE_EXISTS:
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(StoreEnums.STORE_CREATION_FAILED_STORE_EXISTS);
         }
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(StoreEnums.INSERTION_FAILED);

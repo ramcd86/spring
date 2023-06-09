@@ -8,6 +8,7 @@ import java.util.List;
 @Data
 @ToString
 public class Store {
+    private String authKey;
     private String storeTitle;
     private String storeDescription;
     private boolean canMessage;

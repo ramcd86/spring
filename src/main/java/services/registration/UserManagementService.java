@@ -19,6 +19,7 @@ public class UserManagementService {
 
     public boolean isAuthKeyValid(UserAuthKey authKey) {
 
+        // Simple enough, validate the user's authkey and return true or false if its in date.
         CompletableFuture<Boolean> isAuthKeyValidCompletableFuture = CompletableFuture.supplyAsync(() -> {
             try (
                     Connection conn = DatabaseVerification.getConnection();
@@ -48,6 +49,7 @@ public class UserManagementService {
         String salt = HashUtils.generateSalt();
         String authKey = HashUtils.hashWithSalt(email, salt);
 
+        // Update the user's auth key with a newly generated one, and set the expiry to 6 months from 'Now'.
         try (
                 Connection conn = DatabaseVerification.getConnection();
                 PreparedStatement statement = conn.prepareStatement(
@@ -66,8 +68,12 @@ public class UserManagementService {
     }
 
     private String validateAndUpdateAuthKey(String authKey, String email) {
+
         UserAuthKey authKeyObject = new UserAuthKey();
         authKeyObject.setAuthKey(authKey);
+
+        // Validate the authkey. Pretty sure we don't need to use the email here? We could use it in the isAuthKeyValid() function and double check that the auth and email match?
+        // @TODO Examine whether we want to double check this by also sending the email.
         CompletableFuture<Boolean> isAuthKeyValid = CompletableFuture.supplyAsync(() -> {
             try {
                 return isAuthKeyValid(authKeyObject);
@@ -75,7 +81,11 @@ public class UserManagementService {
                 throw new RuntimeException(e);
             }
         });
+
+
         boolean validatedAuthKey = isAuthKeyValid.join();
+
+        // Create and assign a new authkey.
         if (validatedAuthKey) {
             return authKey;
         } else {
@@ -88,6 +98,7 @@ public class UserManagementService {
             });
             return newAuthKeyJoin.join();
         }
+
     }
 
     public PublicUserDetailsResponse getUser(UserLoginDetails userLoginDetails) {
@@ -95,6 +106,7 @@ public class UserManagementService {
         PublicUserDetailsResponse publicUserDetailsResponse = new PublicUserDetailsResponse();
         publicUserDetailsResponse.setPublicUserQueryResponseStatus(UserEnums.LOGIN_FAILED);
 
+        // Return the user login details.
         CompletableFuture<PublicUserDetailsResponse> getUserCompletableFuture = CompletableFuture.supplyAsync(() -> {
             try (
                     Connection conn = DatabaseVerification.getConnection();
@@ -120,6 +132,7 @@ public class UserManagementService {
                 String validatedAuthKey = validateAndUpdateAuthKey(rs.getString("authKey"),
                         rs.getString("email"));
 
+                // Does the UUID need to be public? Possibly? Though only the user should receive this data when they log in, and it'll be used client side for something.
                 PublicUserDetails userToReturn = new PublicUserDetails();
                 userToReturn.setUserName(rs.getString("userName"));
                 userToReturn.setFirstName(rs.getString("firstName"));
@@ -154,6 +167,7 @@ public class UserManagementService {
 
     public boolean userExists(String email) {
 
+        // Simple check to see if the user exists. Could probably be extended to check not just the email but the username too.
         CompletableFuture<Boolean> userExistCompletableFuture = CompletableFuture.supplyAsync(() -> {
             try (
                     Connection conn = DatabaseVerification.getConnection();
@@ -172,8 +186,8 @@ public class UserManagementService {
 
     public boolean insertUser(User userToInsert) {
 
+        // Insert a new user into the users db, we create and issue the first authkey here too. Maybe move that out?
         CompletableFuture<Boolean> insertUserCompletableFuture = CompletableFuture.supplyAsync(() -> {
-
             try (
                     Connection conn = DatabaseVerification.getConnection();
                     PreparedStatement statement = conn.prepareStatement(
@@ -214,14 +228,22 @@ public class UserManagementService {
 
     }
 
-    public boolean updateUserOwnedStoreUUID(String ownedStoreUUID, String ownUUID) {
+    public boolean updateUserOwnedStoreUUID(String ownedStoreUUID, String ownUUID, boolean isDeleteSoreUUID) {
 
+        // Update the user's owned store UUID, or delete it.
         CompletableFuture<Boolean> updateUserOwnedStoreUUIDCompletableFuture = CompletableFuture.supplyAsync(() -> {
             try (
                     Connection conn = DatabaseVerification.getConnection();
-                    PreparedStatement statement = conn.prepareStatement(
-                            "UPDATE users SET ownedStoreUUID = '" + ownedStoreUUID + "' WHERE uuid = '" + ownUUID + "'");
             ) {
+                PreparedStatement statement;
+
+                if (isDeleteSoreUUID) {
+                    statement = conn.prepareStatement(
+                            "UPDATE users SET ownedStoreUUID = '' WHERE uuid = '" + ownUUID + "'");
+                } else {
+                    statement = conn.prepareStatement(
+                            "UPDATE users SET ownedStoreUUID = '" + ownedStoreUUID + "' WHERE uuid = '" + ownUUID + "'");
+                }
 
                 int rs = statement.executeUpdate();
                 return rs > 0;
@@ -235,6 +257,7 @@ public class UserManagementService {
 
     public String getUserOwnedStoreUUID(String authKey) {
 
+        // Get the user's owned store UUID.
         CompletableFuture<String> getUserChildStoreUUIDCompletableFuture = CompletableFuture.supplyAsync(() -> {
             try (
                     Connection conn = DatabaseVerification.getConnection();
@@ -264,7 +287,21 @@ public class UserManagementService {
 
     }
 
-    ;
+//    public boolean userHasStore(UserAuthKey authKey) {
+//
+//        CompletableFuture<Boolean> userHasStoreCompletableFuture = CompletableFuture.supplyAsync(() -> {
+//            try (
+//                    Connection conn = DatabaseVerification.getConnection();
+//                    PreparedStatement statement = conn.prepareStatement("SELECT * FROM users WHERE ownedSTore = ?")
+//            ) {
+//                return false;
+//            } catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
+//        });
+//
+//        return false;
+//    }
 
 
 }

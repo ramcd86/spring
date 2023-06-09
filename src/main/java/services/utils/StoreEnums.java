@@ -2,7 +2,9 @@ package services.utils;
 
 public enum StoreEnums {
     INVALID_UUID,
+    INVALID_USER,
     STORE_INSERTED,
+    STORE_CREATION_FAILED_STORE_EXISTS,
     INSERTION_FAILED,
     ITEM_INSERTION_FAILED,
     ITEM_INSERTED,

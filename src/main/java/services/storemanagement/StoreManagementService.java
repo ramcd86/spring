@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import services.registration.UserManagementService;
 import services.utils.DatabaseVerification;
 import services.utils.HashUtils;
+import services.utils.LoggingUtils;
 import services.utils.StoreEnums;
 
 import java.io.ByteArrayInputStream;
@@ -40,6 +41,28 @@ public class StoreManagementService {
 
     public StoreEnums insertStore(Store store) {
 
+        // Get the associated authkey and assign it to an authkey object.
+        // @TODO Do we need this to be an actual object? Probably. It may need to be expanded upon later.
+        UserAuthKey authKey = new UserAuthKey();
+        authKey.setAuthKey(store.getAuthKey());
+
+        // Check to see whether the authkey is in date and return an invalid user if it isn't.
+        boolean isUserValid = userManagementService.isAuthKeyValid(authKey);
+
+        if (!isUserValid) {
+            return StoreEnums.INVALID_USER;
+        }
+
+        // Check to see if the user actually has an extant store, users may only have one store (As of 09/06/2023 this could be expanded to include more.)
+        String userHasStore = userManagementService.getUserOwnedStoreUUID(authKey.getAuthKey());
+
+        if (!Objects.equals(userHasStore, "null")) {
+            return StoreEnums.STORE_CREATION_FAILED_STORE_EXISTS;
+        }
+
+        // Validate the UUID? This seems kind of redundant right now because we're doing an auth call above but this won't hurt to keep?
+        // This was probably how we intended to initially build the validation for the user's ability to add a store. UUIDs are now a 'soft secret'?
+        // @TODO Revisit whether we need this.
         CompletableFuture<Boolean> validateUUID = CompletableFuture.supplyAsync(() -> {
             try {
                 return isUUIDValid(store.getParentUUID());
@@ -52,6 +75,7 @@ public class StoreManagementService {
             return StoreEnums.INVALID_UUID;
         }
 
+        // Insert the store into the stores table.
         CompletableFuture<StoreEnums> insertStoreCompletableFuture = CompletableFuture.supplyAsync(() -> {
             String craftTagsAsString = String.join(",", store.getCraftTags());
             String storeOwnUUD = HashUtils.generateUUID();
@@ -107,7 +131,10 @@ public class StoreManagementService {
 
                 int rowsInserted = statement.executeUpdate();
 
-                boolean userOwnedStoresUUIDUpdated = userManagementService.updateUserOwnedStoreUUID(storeOwnUUD, store.getParentUUID());
+                // Update the user's owned store UUID, over-writing the existing one.
+                boolean userOwnedStoresUUIDUpdated = userManagementService.updateUserOwnedStoreUUID(storeOwnUUD, store.getParentUUID(), false);
+
+                LoggingUtils.log(rowsInserted);
 
                 return (rowsInserted > 0 && userOwnedStoresUUIDUpdated) ? StoreEnums.STORE_INSERTED : StoreEnums.INSERTION_FAILED;
 
@@ -122,6 +149,7 @@ public class StoreManagementService {
 
     public StoreEnums prepareStoreItemsForInsertion(StoreItem storeItem, String parentUUID) {
 
+        // Place a single store item into the storeItems table.
         CompletableFuture<StoreEnums> prepareStoreItemsForInsertionCompletableFuture = CompletableFuture.supplyAsync(() -> {
             try (
                     Connection conn = DatabaseVerification.getConnection();
@@ -151,9 +179,11 @@ public class StoreManagementService {
         return prepareStoreItemsForInsertionCompletableFuture.join();
     }
 
-
+    // @TODO NEEDS PAGINATION?
     public StoreSummaryResponse getStoresListSummaryFromDatabase() {
 
+        // Get a summarised list of stores from the database.
+        // @TODO are we sure we want to send back the actual storeUUID in this response?
         CompletableFuture<StoreSummaryResponse> storeSummaryResponseCompletableFuture = CompletableFuture.supplyAsync(() -> {
             StoreSummaryResponse response = new StoreSummaryResponse();
             response.setStoreSummaryQueryStatus(StoreEnums.STORE_LIST_EMPTY);
@@ -199,6 +229,8 @@ public class StoreManagementService {
 
     public StoreResponse getIndividualStore(String storeId) {
 
+        // Get the individual store's details using the public store ID, i.e. lucys-bakes-95739271
+        // @TODO This response sends back the Store object as a part of StoreResponse, this isn't a safe object to send back and it should be refactored.
         CompletableFuture<StoreResponse> getIndividualStoreResponseCompletableFuture = CompletableFuture.supplyAsync(() -> {
             StoreResponse response = new StoreResponse();
             response.setStoreQueryResponseStatus(StoreEnums.STORE_EMPTY);
@@ -250,17 +282,18 @@ public class StoreManagementService {
         return getIndividualStoreResponseCompletableFuture.join();
     }
 
-    private List<StoreItem> getStoreItemsForIndividualStore(String parentUUID) throws SQLException {
+    private List<StoreItem> getStoreItemsForIndividualStore(String storeItemsParentUUID) throws SQLException {
 
         List<StoreItem> storeItemsFinal = new ArrayList<StoreItem>();
 
+        // Using the store's actual UUID, get all items from the storeItems table which match the UUID.
         CompletableFuture<List<StoreItem>> getStoreItemsForIndividualStoreCompletableFuture = CompletableFuture.supplyAsync(() -> {
             List<StoreItem> storeItems = new ArrayList<StoreItem>();
             try (
                     Connection conn = DatabaseVerification.getConnection();
                     PreparedStatement statement = conn.prepareStatement("SELECT * FROM storeItems WHERE parentUUID = ?");
             ) {
-                statement.setString(1, parentUUID);
+                statement.setString(1, storeItemsParentUUID);
                 ResultSet rs = statement.executeQuery();
 
                 if (!rs.next()) {
@@ -290,12 +323,15 @@ public class StoreManagementService {
 
     public StoreEnums deleteItem(String storeItemPublicId, String authKey) {
 
+        // Get the user's owned store UUID by auth key.
         String userChildStoreUUID = userManagementService.getUserOwnedStoreUUID(authKey);
 
+        // If the user has no child store then they can't delete items from a store.
         if (Objects.equals(userChildStoreUUID, "")) {
             return StoreEnums.ITEM_DELETION_FAILED;
         }
 
+        // Delete items where the public store item ID (i.e. lucys-bakes-95739271) and the 'parent UUID' which is the user's 'child store UUID' (which is basically the store's UUID)
         CompletableFuture<StoreEnums> deleteItemCompletableFuture = CompletableFuture.supplyAsync(() -> {
             try (
                     Connection conn = DatabaseVerification.getConnection();
@@ -320,8 +356,10 @@ public class StoreManagementService {
 
     public StoreEnums deleteStore(UserAuthKey authKey) {
 
+        // Get the user's owned store UUID by auth key.
         String userChildStoreUUID = userManagementService.getUserOwnedStoreUUID(authKey.getAuthKey());
 
+        // Delete any relevant items that are a part of the user's owned store.
         CompletableFuture<StoreEnums> deleteStoreItemsFromStore = CompletableFuture.supplyAsync(() -> {
             try (
                     Connection conn = DatabaseVerification.getConnection();
@@ -342,6 +380,7 @@ public class StoreManagementService {
         // Might be used later?
         StoreEnums itemsFromStoreDeleted = deleteStoreItemsFromStore.join();
 
+        // Delete the store owned by the user.
         CompletableFuture<StoreEnums> deleteIndividualStoreCompletableFuture = CompletableFuture.supplyAsync(() -> {
             try (
                     Connection conn = DatabaseVerification.getConnection();
