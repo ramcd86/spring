@@ -15,6 +15,8 @@
 - [x] Add item to existing store endpoint.
 - [x] Delete existing store endpoint.
 - [x] Delete existing item endpoint.
+- [x] Get store items images endpoint.
+- [x] Get store images endpoint.
 
 ## Store View
 
@@ -26,10 +28,15 @@
 - [x] Summarised list endpoint.
 - [ ] Search endpoint.
 
+## OUTSTANDING TASKS
+
+- Implement language filter in Store Name and User Name.
+- Explore postcode based search.
+- Replace username and storename with @ in the beginning.
+
 # KNOWN TODO LOCATIONS:
 
 `insertStore()`,
-
 `validateAndUpdateAuthKey()`,
 `getStoresListSummaryFromDatabase()`
 `getIndividualStore()`

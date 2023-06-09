@@ -17,24 +17,34 @@ public class ResourceController {
         this.imageProcessingService = imageProcessingService;
     }
 
-    @GetMapping("store-images/{imageType}/{storeUUID}.{fileType}")
+    @GetMapping("store-images/{imageType}/{storePublicId}.{fileType}")
     public ResponseEntity<?> getStoreImage(@PathVariable("imageType") String imageType,
-                                           @PathVariable("storeUUID") String storeUUID,
+                                           @PathVariable("storePublicId") String storePublicId,
                                            @PathVariable("fileType") String filetype) {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .contentType(MediaType.valueOf("image/" + filetype))
-                .body(imageProcessingService.getStoreImage(imageType, storeUUID));
+                .body(imageProcessingService.getStoreImage(imageType, storePublicId));
     }
 
-    @GetMapping("user-images/{imageType}/{storeUUID}.{fileType}")
-    public ResponseEntity<?> getUserImage(@PathVariable("imageType") String imageType,
-                                          @PathVariable("storeUUID") String storeUUID,
-                                          @PathVariable("fileType") String filetype) {
+    @GetMapping("store-item-image/{storeItemPublicId}.{fileType}")
+    public ResponseEntity<?> getStoreItemImage(
+            @PathVariable("storeItemPublicId") String storeItemPublicId,
+            @PathVariable("fileType") String filetype) {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .contentType(MediaType.valueOf("image/" + filetype))
-                .body(imageProcessingService.getStoreImage(imageType, storeUUID));
+                .body(imageProcessingService.getStoreItemImage(storeItemPublicId));
     }
+
+//    @GetMapping("user-images/{imageType}/{storeUUID}.{fileType}")
+//    public ResponseEntity<?> getUserImage(@PathVariable("imageType") String imageType,
+//                                          @PathVariable("storeUUID") String storeUUID,
+//                                          @PathVariable("fileType") String filetype) {
+//        return ResponseEntity
+//                .status(HttpStatus.OK)
+//                .contentType(MediaType.valueOf("image/" + filetype))
+//                .body(imageProcessingService.getStoreImage(imageType, storeUUID));
+//    }
 
 }
