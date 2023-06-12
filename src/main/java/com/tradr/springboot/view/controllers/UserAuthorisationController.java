@@ -1,11 +1,14 @@
 package com.tradr.springboot.view.controllers;
 
 import com.tradr.springboot.view.userclasses.*;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import services.registration.UserManagementService;
+import services.storemanagement.StoreManagementService;
 import services.utils.StaticMaps;
 import services.utils.UserEnums;
 
@@ -18,9 +21,11 @@ import java.util.List;
 public class UserAuthorisationController {
 
     private final UserManagementService userManagementService;
+    private final StoreManagementService storeManagementService;
 
-    public UserAuthorisationController(UserManagementService userManagementService) {
+    public UserAuthorisationController(UserManagementService userManagementService, StoreManagementService storeManagementService) {
         this.userManagementService = userManagementService;
+        this.storeManagementService = storeManagementService;
     }
 
     @RequestMapping(value = "/user-login", method = RequestMethod.GET)
@@ -99,5 +104,13 @@ public class UserAuthorisationController {
             }
         }
 
+    }
+
+    @PostMapping("delete-user")
+    public ResponseEntity<UserEnums> deleteExistingUser(@RequestBody UserAuthKey userAuthKey) {
+
+        UserEnums deleteUserResponse = userManagementService.deleteUser(userAuthKey, storeManagementService);
+
+        return ResponseEntity.status(HttpStatus.OK).body(deleteUserResponse);
     }
 }

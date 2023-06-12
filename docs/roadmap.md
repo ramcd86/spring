@@ -5,7 +5,7 @@
 - [x] User Registration endpoint.
 - [x] User Login endpoint.
 - [x] Auth key validator endpoint
-- [ ] Delete user endpoint.
+- [x] Delete user endpoint.
 - [ ] Update user details endpoint.
 - [ ] Get user images endpoint.
 

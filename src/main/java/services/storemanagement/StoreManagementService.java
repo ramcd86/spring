@@ -17,11 +17,6 @@ import java.util.concurrent.CompletableFuture;
 @Service
 public class StoreManagementService {
 
-    private final UserManagementService userManagementService;
-
-    public StoreManagementService(UserManagementService userManagementService) {
-        this.userManagementService = userManagementService;
-    }
 
     public boolean isUUIDValid(String uuid) throws Exception {
         try (
@@ -39,7 +34,7 @@ public class StoreManagementService {
         }
     }
 
-    public StoreEnums insertStore(Store store) {
+    public StoreEnums insertStore(Store store, UserManagementService userManagementService) {
 
         // Get the associated authkey and assign it to an authkey object.
         // @TODO Do we need this to be an actual object? Probably. It may need to be expanded upon later.
@@ -321,16 +316,13 @@ public class StoreManagementService {
         return storeItemsFinal;
     }
 
-    public StoreEnums deleteItem(String storeItemPublicId, String authKey) {
-
+    public StoreEnums deleteItem(String storeItemPublicId, String authKey, UserManagementService userManagementService) {
         // Get the user's owned store UUID by auth key.
         String userChildStoreUUID = userManagementService.getUserOwnedStoreUUID(authKey);
-
         // If the user has no child store then they can't delete items from a store.
         if (Objects.equals(userChildStoreUUID, "")) {
             return StoreEnums.ITEM_DELETION_FAILED;
         }
-
         // Delete items where the public store item ID (i.e. lucys-bakes-95739271) and the 'parent UUID' which is the user's 'child store UUID' (which is basically the store's UUID)
         CompletableFuture<StoreEnums> deleteItemCompletableFuture = CompletableFuture.supplyAsync(() -> {
             try (
@@ -341,24 +333,17 @@ public class StoreManagementService {
 
                 statement.setString(1, storeItemPublicId);
                 statement.setString(2, userChildStoreUUID);
-
                 int rowsDeleted = statement.executeUpdate();
-
                 return (rowsDeleted > 0) ? StoreEnums.ITEM_DELETED : StoreEnums.ITEM_DELETION_FAILED;
 
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         });
-
         return deleteItemCompletableFuture.join();
     }
-
-    public StoreEnums deleteStore(UserAuthKey authKey) {
-
-        // Get the user's owned store UUID by auth key.
-        String userChildStoreUUID = userManagementService.getUserOwnedStoreUUID(authKey.getAuthKey());
-
+    public StoreEnums deleteStore(UserAuthKey authKey, String userChildStoreUUID) {
+   
         // Delete any relevant items that are a part of the user's owned store.
         CompletableFuture<StoreEnums> deleteStoreItemsFromStore = CompletableFuture.supplyAsync(() -> {
             try (
@@ -376,10 +361,8 @@ public class StoreManagementService {
                 throw new RuntimeException(e);
             }
         });
-
         // Might be used later?
         StoreEnums itemsFromStoreDeleted = deleteStoreItemsFromStore.join();
-
         // Delete the store owned by the user.
         CompletableFuture<StoreEnums> deleteIndividualStoreCompletableFuture = CompletableFuture.supplyAsync(() -> {
             try (
@@ -387,18 +370,13 @@ public class StoreManagementService {
                     PreparedStatement statement = conn.prepareStatement(
                             "DELETE FROM stores WHERE ownUUID = ?");
             ) {
-
                 statement.setString(1, userChildStoreUUID);
-
                 int rowsDeleted = statement.executeUpdate();
-
                 return (rowsDeleted > 0) ? StoreEnums.STORE_DELETION_SUCCESSFUL : StoreEnums.STORE_DELETION_FAILED;
-
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         });
-
         return deleteIndividualStoreCompletableFuture.join();
     }
 

@@ -27,7 +27,7 @@ public class StoreController {
     
     @PostMapping("create-store")
     public ResponseEntity<StoreEnums> insertStore(@RequestBody Store storeToBeInserted) {
-        StoreEnums resultFromService = storeManagementService.insertStore(storeToBeInserted);
+        StoreEnums resultFromService = storeManagementService.insertStore(storeToBeInserted, userManagementService);
 
         switch (resultFromService) {
             case INVALID_UUID:
@@ -86,7 +86,7 @@ public class StoreController {
             return ResponseEntity.badRequest().body(StoreEnums.ITEM_DELETION_FAILED);
         }
 
-        StoreEnums itemInsertionState = storeManagementService.deleteItem(itemToBeDeleted.getStoreItemPublicId(), itemToBeDeleted.getAuthKey());
+        StoreEnums itemInsertionState = storeManagementService.deleteItem(itemToBeDeleted.getStoreItemPublicId(), itemToBeDeleted.getAuthKey(), userManagementService);
 
         if (itemInsertionState == StoreEnums.ITEM_DELETED) {
             return ResponseEntity.status(HttpStatus.OK).body(StoreEnums.ITEM_DELETED);
@@ -102,7 +102,8 @@ public class StoreController {
             return ResponseEntity.badRequest().body(StoreEnums.STORE_DELETION_FAILED);
         }
 
-        StoreEnums itemInsertionState = storeManagementService.deleteStore(authKey);
+        String userOwnedStoreUUID = userManagementService.getUserOwnedStoreUUID(authKey.getAuthKey());
+        StoreEnums itemInsertionState = storeManagementService.deleteStore(authKey, userOwnedStoreUUID);
 
         if (itemInsertionState == StoreEnums.STORE_DELETION_SUCCESSFUL) {
             return ResponseEntity.status(HttpStatus.OK).body(StoreEnums.STORE_DELETION_SUCCESSFUL);

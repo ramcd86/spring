@@ -2,16 +2,21 @@ package services.registration;
 
 import com.tradr.springboot.view.userclasses.*;
 import org.springframework.stereotype.Service;
+
+import services.storemanagement.StoreManagementService;
 import services.utils.DatabaseVerification;
 import services.utils.HashUtils;
+import services.utils.StoreEnums;
 import services.utils.TimeUtils;
 import services.utils.UserEnums;
 
 import java.io.ByteArrayInputStream;
 import java.security.NoSuchAlgorithmException;
 import java.sql.*;
-import java.util.Base64;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+
+import javax.management.RuntimeErrorException;
 
 
 @Service
@@ -256,7 +261,6 @@ public class UserManagementService {
     }
 
     public String getUserOwnedStoreUUID(String authKey) {
-
         // Get the user's owned store UUID.
         CompletableFuture<String> getUserChildStoreUUIDCompletableFuture = CompletableFuture.supplyAsync(() -> {
             try (
@@ -267,41 +271,47 @@ public class UserManagementService {
                 statement.setString(1, authKey);
                 ResultSet rs = statement.executeQuery();
                 String ownedStoreUUID = "";
-
                 if (!rs.next()) {
                     return ownedStoreUUID;
                 }
-
                 do {
                     ownedStoreUUID = rs.getString("ownedStoreUUID");
                 } while (rs.next());
-
                 return ownedStoreUUID;
-
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         });
-
         return getUserChildStoreUUIDCompletableFuture.join();
-
     }
 
-//    public boolean userHasStore(UserAuthKey authKey) {
-//
-//        CompletableFuture<Boolean> userHasStoreCompletableFuture = CompletableFuture.supplyAsync(() -> {
-//            try (
-//                    Connection conn = DatabaseVerification.getConnection();
-//                    PreparedStatement statement = conn.prepareStatement("SELECT * FROM users WHERE ownedSTore = ?")
-//            ) {
-//                return false;
-//            } catch (SQLException e) {
-//                throw new RuntimeException(e);
-//            }
-//        });
-//
-//        return false;
-//    }
+    public UserEnums deleteUser(UserAuthKey userAuthKey, StoreManagementService storeManagementService) {
+
+        String userOwnedStoreUUID = getUserOwnedStoreUUID(userAuthKey.getAuthKey());
+        // Delete user store. We don't care if we get anything back from this.
+        if (!Objects.equals(userOwnedStoreUUID, "")) {
+            storeManagementService.deleteStore(userAuthKey, userOwnedStoreUUID);
+        }
+
+        CompletableFuture<UserEnums> deleteUserFromDatabaseCompleyCompletableFuture = CompletableFuture.supplyAsync(() -> {
+                try (
+                    Connection conn = DatabaseVerification.getConnection();
+                    PreparedStatement statement = conn.prepareStatement(
+                        "DELETE FROM users WHERE authKey = ?")
+                ) {
+                statement.setString(1, userAuthKey.getAuthKey());
+
+                int userDeleted = statement.executeUpdate();
+
+                return (userDeleted > 0) ? UserEnums.USER_DELETED : UserEnums.USER_DELETION_FAILED;
+                } catch(SQLException e) {
+                    throw new RuntimeException(e);
+                }
+        });
+
+        return deleteUserFromDatabaseCompleyCompletableFuture.join();
+        
+    }
 
 
 }
