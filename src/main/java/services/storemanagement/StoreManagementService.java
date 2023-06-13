@@ -17,23 +17,6 @@ import java.util.concurrent.CompletableFuture;
 @Service
 public class StoreManagementService {
 
-
-    public boolean isUUIDValid(String uuid) throws Exception {
-        try (
-                Connection conn = DatabaseVerification.getConnection();
-                PreparedStatement statement = conn.prepareStatement(
-                        "SELECT * FROM users WHERE uuid = '" + uuid + "'");
-                ResultSet rs = statement.executeQuery()
-        ) {
-            if (!rs.next()) {
-                throw new Exception("No such UUID key");
-            }
-            return true;
-        } catch (SQLException e) {
-            throw new SQLException(e);
-        }
-    }
-
     public StoreEnums insertStore(Store store, UserManagementService userManagementService) {
 
         // Get the associated authkey and assign it to an authkey object.
@@ -342,6 +325,7 @@ public class StoreManagementService {
         });
         return deleteItemCompletableFuture.join();
     }
+    
     public StoreEnums deleteStore(UserAuthKey authKey, String userChildStoreUUID) {
    
         // Delete any relevant items that are a part of the user's owned store.
@@ -379,5 +363,20 @@ public class StoreManagementService {
         });
         return deleteIndividualStoreCompletableFuture.join();
     }
-
+    
+    public boolean isUUIDValid(String uuid) throws Exception {
+        try (
+                Connection conn = DatabaseVerification.getConnection();
+                PreparedStatement statement = conn.prepareStatement(
+                        "SELECT * FROM users WHERE uuid = '" + uuid + "'");
+                ResultSet rs = statement.executeQuery()
+        ) {
+            if (!rs.next()) {
+                throw new Exception("No such UUID key");
+            }
+            return true;
+        } catch (SQLException e) {
+            throw new SQLException(e);
+        }
+    }
 }

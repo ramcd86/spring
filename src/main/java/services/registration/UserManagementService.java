@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import services.storemanagement.StoreManagementService;
 import services.utils.DatabaseVerification;
 import services.utils.HashUtils;
-import services.utils.StoreEnums;
 import services.utils.TimeUtils;
 import services.utils.UserEnums;
 
@@ -16,38 +15,10 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-import javax.management.RuntimeErrorException;
 
 
 @Service
 public class UserManagementService {
-
-    public boolean isAuthKeyValid(UserAuthKey authKey) {
-
-        // Simple enough, validate the user's authkey and return true or false if its in date.
-        CompletableFuture<Boolean> isAuthKeyValidCompletableFuture = CompletableFuture.supplyAsync(() -> {
-            try (
-                    Connection conn = DatabaseVerification.getConnection();
-                    PreparedStatement statement = conn.prepareStatement(
-                            "SELECT * FROM users WHERE authKey = '" + authKey.getAuthKey() + "'");
-            ) {
-
-                ResultSet rs = statement.executeQuery();
-
-                if (!rs.next()) {
-                    return false;
-                }
-                String authKeyTimeStamp = rs.getString("authKeyExpiry");
-                return !TimeUtils.isISOStringOutOfDate(authKeyTimeStamp);
-
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-        return isAuthKeyValidCompletableFuture.join();
-
-    }
 
     private String updateAuthKey(String email) throws Exception {
 
@@ -170,6 +141,130 @@ public class UserManagementService {
         return publicUserDetailsResponse;
     }
 
+    public String getUserOwnedStoreUUID(String authKey) {
+        // Get the user's owned store UUID.
+        CompletableFuture<String> getUserChildStoreUUIDCompletableFuture = CompletableFuture.supplyAsync(() -> {
+            try (
+                    Connection conn = DatabaseVerification.getConnection();
+                    PreparedStatement statement = conn.prepareStatement(
+                            "SELECT * FROM users WHERE authKey = ?;");
+            ) {
+                statement.setString(1, authKey);
+                ResultSet rs = statement.executeQuery();
+                String ownedStoreUUID = "";
+                if (!rs.next()) {
+                    return ownedStoreUUID;
+                }
+                do {
+                    ownedStoreUUID = rs.getString("ownedStoreUUID");
+                } while (rs.next());
+                return ownedStoreUUID;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        return getUserChildStoreUUIDCompletableFuture.join();
+    }
+
+    public UserEnums deleteUser(UserAuthKey userAuthKey, StoreManagementService storeManagementService) {
+
+        String userOwnedStoreUUID = getUserOwnedStoreUUID(userAuthKey.getAuthKey());
+        // Delete user store. We don't care if we get anything back from this.
+        if (!Objects.equals(userOwnedStoreUUID, "")) {
+            storeManagementService.deleteStore(userAuthKey, userOwnedStoreUUID);
+        }
+
+        CompletableFuture<UserEnums> deleteUserFromDatabaseCompleyCompletableFuture = CompletableFuture.supplyAsync(() -> {
+                try (
+                    Connection conn = DatabaseVerification.getConnection();
+                    PreparedStatement statement = conn.prepareStatement(
+                        "DELETE FROM users WHERE authKey = ?")
+                ) {
+                statement.setString(1, userAuthKey.getAuthKey());
+
+                int userDeleted = statement.executeUpdate();
+
+                return (userDeleted > 0) ? UserEnums.USER_DELETED : UserEnums.USER_DELETION_FAILED;
+                } catch(SQLException e) {
+                    throw new RuntimeException(e);
+                }
+        });
+
+        return deleteUserFromDatabaseCompleyCompletableFuture.join();
+        
+    }
+
+    public UserEnums updateUser(UserUpdate userUpdate) {
+
+        UserAuthKey authKey = new UserAuthKey();
+        authKey.setAuthKey(userUpdate.getAuthKey());
+
+        if (!isAuthKeyValid(authKey)) {
+
+        }
+
+        CompletableFuture<UserEnums> updateUsCompletableFuture = CompletableFuture.supplyAsync(() -> {
+
+            try (
+                Connection conn = DatabaseVerification.getConnection();
+                PreparedStatement statement = conn.prepareStatement("UPDATE Users SET userName = COALESCE(?, userName), firstName = COALESCE(?, firstName), lastName = COALESCE(?, lastName), email = COALESCE(?, email), hash = COALESCE(?, hash), salt = COALESCE(?, salt), avatar = COALESCE(?, avatar) WHERE authKey = ?")
+            ) {
+
+                ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(userUpdate.getAvatar()));
+                String salt = HashUtils.generateSalt();
+                String hash = HashUtils.hashWithSalt(userUpdate.getPassword(), salt);
+
+                statement.setString(1, userUpdate.getUserName());
+                statement.setString(2, userUpdate.getFirstName());
+                statement.setString(3, userUpdate.getLastName());
+                statement.setString(4, userUpdate.getEmail());
+                statement.setString(5, hash);
+                statement.setString(6, salt);
+                if (userUpdate.getAvatar() != null) {
+                    statement.setBinaryStream(7, inputStream, inputStream.available());
+                } else {
+                    statement.setNull(7, Types.BLOB);
+                }
+                statement.setString(8, userUpdate.getAuthKey());
+
+                int rowsUpdated = statement.executeUpdate();
+                return rowsUpdated > 0 ? UserEnums.USER_UPDATED : UserEnums.USER_UPDATE_FAILED;
+            }
+            catch(SQLException | NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return updateUsCompletableFuture.join();
+    }
+
+    public boolean isAuthKeyValid(UserAuthKey authKey) {
+
+        // Simple enough, validate the user's authkey and return true or false if its in date.
+        CompletableFuture<Boolean> isAuthKeyValidCompletableFuture = CompletableFuture.supplyAsync(() -> {
+            try (
+                    Connection conn = DatabaseVerification.getConnection();
+                    PreparedStatement statement = conn.prepareStatement(
+                            "SELECT * FROM users WHERE authKey = '" + authKey.getAuthKey() + "'");
+            ) {
+
+                ResultSet rs = statement.executeQuery();
+
+                if (!rs.next()) {
+                    return false;
+                }
+                String authKeyTimeStamp = rs.getString("authKeyExpiry");
+                return !TimeUtils.isISOStringOutOfDate(authKeyTimeStamp);
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return isAuthKeyValidCompletableFuture.join();
+
+    }
+
     public boolean userExists(String email) {
 
         // Simple check to see if the user exists. Could probably be extended to check not just the email but the username too.
@@ -259,59 +354,5 @@ public class UserManagementService {
 
         return updateUserOwnedStoreUUIDCompletableFuture.join();
     }
-
-    public String getUserOwnedStoreUUID(String authKey) {
-        // Get the user's owned store UUID.
-        CompletableFuture<String> getUserChildStoreUUIDCompletableFuture = CompletableFuture.supplyAsync(() -> {
-            try (
-                    Connection conn = DatabaseVerification.getConnection();
-                    PreparedStatement statement = conn.prepareStatement(
-                            "SELECT * FROM users WHERE authKey = ?;");
-            ) {
-                statement.setString(1, authKey);
-                ResultSet rs = statement.executeQuery();
-                String ownedStoreUUID = "";
-                if (!rs.next()) {
-                    return ownedStoreUUID;
-                }
-                do {
-                    ownedStoreUUID = rs.getString("ownedStoreUUID");
-                } while (rs.next());
-                return ownedStoreUUID;
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        return getUserChildStoreUUIDCompletableFuture.join();
-    }
-
-    public UserEnums deleteUser(UserAuthKey userAuthKey, StoreManagementService storeManagementService) {
-
-        String userOwnedStoreUUID = getUserOwnedStoreUUID(userAuthKey.getAuthKey());
-        // Delete user store. We don't care if we get anything back from this.
-        if (!Objects.equals(userOwnedStoreUUID, "")) {
-            storeManagementService.deleteStore(userAuthKey, userOwnedStoreUUID);
-        }
-
-        CompletableFuture<UserEnums> deleteUserFromDatabaseCompleyCompletableFuture = CompletableFuture.supplyAsync(() -> {
-                try (
-                    Connection conn = DatabaseVerification.getConnection();
-                    PreparedStatement statement = conn.prepareStatement(
-                        "DELETE FROM users WHERE authKey = ?")
-                ) {
-                statement.setString(1, userAuthKey.getAuthKey());
-
-                int userDeleted = statement.executeUpdate();
-
-                return (userDeleted > 0) ? UserEnums.USER_DELETED : UserEnums.USER_DELETION_FAILED;
-                } catch(SQLException e) {
-                    throw new RuntimeException(e);
-                }
-        });
-
-        return deleteUserFromDatabaseCompleyCompletableFuture.join();
-        
-    }
-
 
 }

@@ -24,6 +24,7 @@ services\utils\UserEnums.class
 com\tradr\springboot\view\storeclasses\StoreResponse.class
 com\tradr\springboot\view\userclasses\User.class
 com\tradr\springboot\view\storeclasses\StoreSummaryResponse.class
+com\tradr\springboot\view\userclasses\UserUpdate.class
 services\utils\StaticMaps$RegistrationFailureEnums.class
 services\utils\ImageProcessorService.class
 com\tradr\springboot\view\userclasses\UserRegistrationResponse.class

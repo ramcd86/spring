@@ -25,6 +25,7 @@ C:\_dev\spring-hello-world\src\main\java\com\tradr\springboot\view\storeclasses\
 C:\_dev\spring-hello-world\src\main\java\com\tradr\springboot\view\controllers\StoreController.java
 C:\_dev\spring-hello-world\src\main\java\com\tradr\springboot\view\storeclasses\StoreResponse.java
 C:\_dev\spring-hello-world\src\main\java\com\tradr\springboot\view\Application.java
+C:\_dev\spring-hello-world\src\main\java\com\tradr\springboot\view\userclasses\UserUpdate.java
 C:\_dev\spring-hello-world\src\main\java\com\tradr\springboot\view\userclasses\UserLoginDetails.java
 C:\_dev\spring-hello-world\src\main\java\com\tradr\springboot\view\storeclasses\StoreSummaryResponse.java
 C:\_dev\spring-hello-world\src\main\java\services\utils\Environment.java

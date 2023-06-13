@@ -16,6 +16,4 @@ public class User {
     private String authKeyExpiry;
     private String avatar;
     private String registrationDate;
-//    private String uuid;
-//    private String ownedStoreUUID;
 }

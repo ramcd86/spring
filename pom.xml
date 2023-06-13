@@ -75,6 +75,7 @@
                 </configuration>
             </plugin>
         </plugins>
+            <testSourceDirectory>tests/java</testSourceDirectory>
     </build>
 </project>
 
