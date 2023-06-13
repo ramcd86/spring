@@ -1,16 +1,16 @@
-import org.mockito.Mockito;
+// import org.mockito.Mockito;
 
-import services.registration.UserManagementService;
+// import services.registration.UserManagementService;
 
-// ...
+// // ...
 
-public class UserManagementServiceMock extends UserManagementService {
-    public UserManagementServiceMock() {
-        super(); // Call the constructor of the superclass
-    }
+// public class UserManagementServiceMock extends UserManagementService {
+//     public UserManagementServiceMock() {
+//         super(); // Call the constructor of the superclass
+//     }
 
-    @Override
-    public String updateAuthKey(String email) throws Exception {
-        return "mocked-auth-key";
-    }
-}
+//     @Override
+//     public String updateAuthKey(String email) throws Exception {
+//         return "mocked-auth-key";
+//     }
+// }

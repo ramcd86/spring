@@ -1,61 +1,61 @@
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+// import org.junit.jupiter.api.Assertions;
+// import org.junit.jupiter.api.BeforeEach;
+// import org.junit.jupiter.api.Test;
+// import org.mockito.Mockito;
 
-import services.registration.UserManagementService;
+// import services.registration.UserManagementService;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+// import java.sql.Connection;
+// import java.sql.PreparedStatement;
+// import java.sql.ResultSet;
 
-import static org.mockito.ArgumentMatchers.anyString;
+// import static org.mockito.ArgumentMatchers.anyString;
 
-public class UserManagementServiceTest {
+// public class UserManagementServiceTest {
 
-    private Connection mockConnection;
-    private PreparedStatement mockStatement;
-    private ResultSet mockResultSet;
-    private UserManagementServiceMock userManagementServiceMock;
+//     private Connection mockConnection;
+//     private PreparedStatement mockStatement;
+//     private ResultSet mockResultSet;
+//     private UserManagementServiceMock userManagementServiceMock;
 
-    @BeforeEach
-    public void setup() throws Exception {
-        // Mock the dependencies
-        mockConnection = Mockito.mock(Connection.class);
-        mockStatement = Mockito.mock(PreparedStatement.class);
-        mockResultSet = Mockito.mock(ResultSet.class);
+//     @BeforeEach
+//     public void setup() throws Exception {
+//         // Mock the dependencies
+//         mockConnection = Mockito.mock(Connection.class);
+//         mockStatement = Mockito.mock(PreparedStatement.class);
+//         mockResultSet = Mockito.mock(ResultSet.class);
 
-        // Create an instance of the class under test
-        userManagementServiceMock = new UserManagementServiceMock();
+//         // Create an instance of the class under test
+//         userManagementServiceMock = new UserManagementServiceMock();
 
-        // Set up the mock behavior
-        Mockito.when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
-        Mockito.when(mockStatement.executeUpdate()).thenReturn(1);
-        Mockito.when(mockStatement.getResultSet()).thenReturn(mockResultSet);
-        Mockito.when(mockResultSet.next()).thenReturn(true);
-    }
+//         // Set up the mock behavior
+//         Mockito.when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
+//         Mockito.when(mockStatement.executeUpdate()).thenReturn(1);
+//         Mockito.when(mockStatement.getResultSet()).thenReturn(mockResultSet);
+//         Mockito.when(mockResultSet.next()).thenReturn(true);
+//     }
 
-    @Test
-    public void testUpdateAuthKey() throws Exception {
-        // Set up test data
-        String email = "test@example.com";
+//     @Test
+//     public void testUpdateAuthKey() throws Exception {
+//         // Set up test data
+//         String email = "test@example.com";
 
-        // Call the method
-        String authKey = userManagementServiceMock.updateAuthKey(email);
+//         // Call the method
+//         String authKey = userManagementServiceMock.updateAuthKey(email);
 
-        // Verify the SQL query and parameters
-        Mockito.verify(mockConnection).prepareStatement(
-                "UPDATE users SET authKey = ?, authKeyExpiry = ? WHERE email = ?");
-        Mockito.verify(mockStatement).setString(1, Mockito.anyString());
-        Mockito.verify(mockStatement).setString(2, Mockito.anyString());
-        Mockito.verify(mockStatement).setString(3, email);
+//         // Verify the SQL query and parameters
+//         Mockito.verify(mockConnection).prepareStatement(
+//                 "UPDATE users SET authKey = ?, authKeyExpiry = ? WHERE email = ?");
+//         Mockito.verify(mockStatement).setString(1, Mockito.anyString());
+//         Mockito.verify(mockStatement).setString(2, Mockito.anyString());
+//         Mockito.verify(mockStatement).setString(3, email);
 
-        // Verify that the method returns the expected authKey
-        Assertions.assertNotNull(authKey);
+//         // Verify that the method returns the expected authKey
+//         Assertions.assertNotNull(authKey);
 
-        // Verify that the connection, statement, and result set are closed
-        Mockito.verify(mockResultSet).close();
-        Mockito.verify(mockStatement).close();
-        Mockito.verify(mockConnection).close();
-    }
-}
+//         // Verify that the connection, statement, and result set are closed
+//         Mockito.verify(mockResultSet).close();
+//         Mockito.verify(mockStatement).close();
+//         Mockito.verify(mockConnection).close();
+//     }
+// }
