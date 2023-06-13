@@ -6,5 +6,6 @@ import lombok.ToString;
 @Data
 @ToString
 public class UserAuthKey {
-    private String authKey;
+
+  private String authKey;
 }

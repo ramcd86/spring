@@ -7,6 +7,7 @@ import services.utils.StoreEnums;
 @Data
 @ToString
 public class StoreResponse {
-    private StoreEnums storeQueryResponseStatus;
-    private Store store;
+
+  private StoreEnums storeQueryResponseStatus;
+  private Store store;
 }

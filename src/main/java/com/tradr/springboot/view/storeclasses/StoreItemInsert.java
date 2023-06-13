@@ -6,7 +6,8 @@ import lombok.ToString;
 @Data
 @ToString
 public class StoreItemInsert {
-    private String authKey;
-    private String parentUUID;
-    private StoreItem storeItem;
+
+  private String authKey;
+  private String parentUUID;
+  private StoreItem storeItem;
 }

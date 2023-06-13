@@ -6,6 +6,7 @@ import lombok.ToString;
 @Data
 @ToString
 public class StoreItemDeletion {
-    private String authKey;
-    private String storeItemPublicId;
+
+  private String authKey;
+  private String storeItemPublicId;
 }

@@ -7,6 +7,7 @@ import services.utils.UserEnums;
 @Data
 @ToString
 public class PublicUserDetailsResponse {
-    private UserEnums publicUserQueryResponseStatus;
-    private PublicUserDetails publicUserDetails;
+
+  private UserEnums publicUserQueryResponseStatus;
+  private PublicUserDetails publicUserDetails;
 }

@@ -6,8 +6,9 @@ import lombok.ToString;
 @Data
 @ToString
 public class StoreReviews {
-    private String parentUUID;
-    private int storeRating;
-    private String from;
-    private String review;
+
+  private String parentUUID;
+  private int storeRating;
+  private String from;
+  private String review;
 }
