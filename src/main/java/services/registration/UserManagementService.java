@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 @Service
 public class UserManagementService {
 
-    private String updateAuthKey(String email) throws Exception {
+    public String updateAuthKey(String email) throws Exception {
 
         String salt = HashUtils.generateSalt();
         String authKey = HashUtils.hashWithSalt(email, salt);

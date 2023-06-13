@@ -3,6 +3,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import services.registration.UserManagementService;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -14,7 +16,7 @@ public class UserManagementServiceTest {
     private Connection mockConnection;
     private PreparedStatement mockStatement;
     private ResultSet mockResultSet;
-    private UserManagementService userManagementService;
+    private UserManagementServiceMock userManagementServiceMock;
 
     @BeforeEach
     public void setup() throws Exception {
@@ -24,7 +26,7 @@ public class UserManagementServiceTest {
         mockResultSet = Mockito.mock(ResultSet.class);
 
         // Create an instance of the class under test
-        userManagementService = new UserManagementService();
+        userManagementServiceMock = new UserManagementServiceMock();
 
         // Set up the mock behavior
         Mockito.when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
@@ -39,7 +41,7 @@ public class UserManagementServiceTest {
         String email = "test@example.com";
 
         // Call the method
-        String authKey = userManagementService.updateAuthKey(email);
+        String authKey = userManagementServiceMock.updateAuthKey(email);
 
         // Verify the SQL query and parameters
         Mockito.verify(mockConnection).prepareStatement(

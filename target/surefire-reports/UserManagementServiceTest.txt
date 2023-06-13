@@ -1,0 +1,8 @@
+-------------------------------------------------------------------------------
+Test set: UserManagementServiceTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 5.533 s <<< FAILURE! - in UserManagementServiceTest
+testUpdateAuthKey  Time elapsed: 5.485 s  <<< ERROR!
+java.lang.Exception: User not updated, or no such user.
+	at UserManagementServiceTest.testUpdateAuthKey(UserManagementServiceTest.java:44)
+
