@@ -218,7 +218,15 @@ public class UserManagementService {
     UserAuthKey authKey = new UserAuthKey();
     authKey.setAuthKey(userUpdate.getAuthKey());
 
-    if (!isAuthKeyValid(authKey)) {}
+    if (userUpdate.getPassword() != null) {}
+
+    boolean userIsUpdatingPassword = userUpdate.getPassword() != null
+      ? true
+      : false;
+
+    if (!isAuthKeyValid(authKey)) {
+      return UserEnums.USER_NOT_AUTHORISED;
+    }
 
     CompletableFuture<UserEnums> updateUsCompletableFuture = CompletableFuture.supplyAsync(() -> {
         try (
@@ -230,8 +238,12 @@ public class UserManagementService {
           ByteArrayInputStream inputStream = new ByteArrayInputStream(
             Base64.getDecoder().decode(userUpdate.getAvatar())
           );
-          String salt = HashUtils.generateSalt();
-          String hash = HashUtils.hashWithSalt(userUpdate.getPassword(), salt);
+          String salt = userIsUpdatingPassword
+            ? HashUtils.generateSalt()
+            : null;
+          String hash = userIsUpdatingPassword
+            ? HashUtils.hashWithSalt(userUpdate.getPassword(), salt)
+            : null;
 
           statement.setString(1, userUpdate.getUserName());
           statement.setString(2, userUpdate.getFirstName());
