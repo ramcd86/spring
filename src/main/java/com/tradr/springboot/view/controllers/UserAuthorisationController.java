@@ -148,4 +148,15 @@ public class UserAuthorisationController {
 
 		return ResponseEntity.status(HttpStatus.OK).body(deleteUserResponse);
 	}
+
+	@PostMapping("update-user")
+	public ResponseEntity<UserEnums> updateUser(
+		@RequestBody UserUpdate userUpate
+	) {
+		UserEnums updateUserResponse = userManagementService.updateUser(
+			userUpate
+		);
+
+		return ResponseEntity.status(HttpStatus.OK).body(updateUserResponse);
+	}
 }
