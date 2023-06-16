@@ -1,8 +1,11 @@
 {
-  "java.compile.nullAnalysis.mode": "automatic",
-  "java.configuration.updateBuildConfiguration": "interactive",
-  "[java]": {
-    "editor.formatOnSave": true,
-    "editor.formatOnPaste": true
-  }
+	"java.compile.nullAnalysis.mode": "automatic",
+	"java.configuration.updateBuildConfiguration": "interactive",
+	"[java]": {
+		"editor.formatOnSave": true,
+		"editor.formatOnPaste": true,
+		"editor.tabSize": 4,
+		"editor.insertSpaces": false
+	},
+	"java.format.settings.url": ".vscode/java-formatter.xml"
 }
