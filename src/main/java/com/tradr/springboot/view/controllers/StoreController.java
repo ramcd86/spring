@@ -17,145 +17,163 @@ import services.utils.StoreEnums;
 @Controller
 public class StoreController {
 
-  private final StoreManagementService storeManagementService;
-  private final UserManagementService userManagementService;
+	private final StoreManagementService storeManagementService;
+	private final UserManagementService userManagementService;
 
-  public StoreController(
-    StoreManagementService storeManagementService,
-    UserManagementService userManagementService
-  ) {
-    this.storeManagementService = storeManagementService;
-    this.userManagementService = userManagementService;
-  }
+	public StoreController(
+		StoreManagementService storeManagementService,
+		UserManagementService userManagementService
+	) {
+		this.storeManagementService = storeManagementService;
+		this.userManagementService = userManagementService;
+	}
 
-  @PostMapping("create-store")
-  public ResponseEntity<StoreEnums> insertStore(
-    @RequestBody Store storeToBeInserted
-  ) {
-    StoreEnums resultFromService = storeManagementService.insertStore(
-      storeToBeInserted,
-      userManagementService
-    );
+	@PostMapping("create-store")
+	public ResponseEntity<StoreEnums> insertStore(
+		@RequestBody Store storeToBeInserted
+	) {
+		StoreEnums resultFromService = storeManagementService.insertStore(
+			storeToBeInserted,
+			userManagementService
+		);
 
-    switch (resultFromService) {
-      case INVALID_UUID:
-        return ResponseEntity
-          .status(HttpStatus.FORBIDDEN)
-          .body(StoreEnums.INVALID_UUID);
-      case INSERTION_FAILED:
-        return ResponseEntity
-          .status(HttpStatus.BAD_REQUEST)
-          .body(StoreEnums.INSERTION_FAILED);
-      case STORE_INSERTED:
-        return ResponseEntity
-          .status(HttpStatus.OK)
-          .body(StoreEnums.STORE_INSERTED);
-      case STORE_CREATION_FAILED_STORE_EXISTS:
-        return ResponseEntity
-          .status(HttpStatus.FORBIDDEN)
-          .body(StoreEnums.STORE_CREATION_FAILED_STORE_EXISTS);
-    }
+		switch (resultFromService) {
+			case INVALID_UUID:
+				return ResponseEntity
+					.status(HttpStatus.FORBIDDEN)
+					.body(StoreEnums.INVALID_UUID);
+			case STORE_INSERTION_FAILED:
+				return ResponseEntity
+					.status(HttpStatus.BAD_REQUEST)
+					.body(StoreEnums.STORE_INSERTION_FAILED);
+			case STORE_INSERTED:
+				return ResponseEntity
+					.status(HttpStatus.OK)
+					.body(StoreEnums.STORE_INSERTED);
+			case STORE_CREATION_FAILED_STORE_EXISTS:
+				return ResponseEntity
+					.status(HttpStatus.FORBIDDEN)
+					.body(StoreEnums.STORE_CREATION_FAILED_STORE_EXISTS);
+			case STORE_CREATION_FAILED_PROFANITY:
+				return ResponseEntity
+					.status(HttpStatus.FORBIDDEN)
+					.body(StoreEnums.STORE_CREATION_FAILED_PROFANITY);
+		}
 
-    return ResponseEntity
-      .status(HttpStatus.BAD_REQUEST)
-      .body(StoreEnums.INSERTION_FAILED);
-  }
+		return ResponseEntity
+			.status(HttpStatus.BAD_REQUEST)
+			.body(StoreEnums.STORE_INSERTION_FAILED);
+	}
 
-  @GetMapping("get-stores-list")
-  public ResponseEntity<StoreSummaryResponse> getStoresListSummary() {
-    StoreSummaryResponse storeSummaryResponse = storeManagementService.getStoresListSummaryFromDatabase();
-    return ResponseEntity.ok(storeSummaryResponse);
-  }
+	@GetMapping("get-stores-list")
+	public ResponseEntity<StoreSummaryResponse> getStoresListSummary() {
+		StoreSummaryResponse storeSummaryResponse = storeManagementService.getStoresListSummaryFromDatabase();
+		return ResponseEntity.ok(storeSummaryResponse);
+	}
 
-  @GetMapping("get-store/{storeId}")
-  public ResponseEntity<StoreResponse> getIndividualStore(
-    @PathVariable("storeId") String storeId
-  ) {
-    StoreResponse storeResponse = storeManagementService.getIndividualStore(
-      storeId
-    );
-    return ResponseEntity.ok(storeResponse);
-  }
+	@GetMapping("get-store/{storeId}")
+	public ResponseEntity<StoreResponse> getIndividualStore(
+		@PathVariable("storeId") String storeId
+	) {
+		StoreResponse storeResponse = storeManagementService.getIndividualStore(
+			storeId
+		);
+		return ResponseEntity.ok(storeResponse);
+	}
 
-  @PostMapping("insert-item")
-  public ResponseEntity<StoreEnums> insertItemIntoExistingStore(
-    @RequestBody StoreItemInsert itemToBeInserted
-  ) {
-    UserAuthKey authKey = new UserAuthKey();
-    authKey.setAuthKey(itemToBeInserted.getAuthKey());
+	@PostMapping("insert-item")
+	public ResponseEntity<StoreEnums> insertItemIntoExistingStore(
+		@RequestBody StoreItemInsert itemToBeInserted
+	) {
+		UserAuthKey authKey = new UserAuthKey();
+		authKey.setAuthKey(itemToBeInserted.getAuthKey());
 
-    if (!userManagementService.isAuthKeyValid(authKey)) {
-      return ResponseEntity.badRequest().body(StoreEnums.ITEM_INSERTION_FAILED);
-    }
+		if (!userManagementService.isAuthKeyValid(authKey)) {
+			return ResponseEntity
+				.badRequest()
+				.body(StoreEnums.ITEM_INSERTION_FAILED);
+		}
 
-    StoreEnums itemInsertionState = storeManagementService.prepareStoreItemsForInsertion(
-      itemToBeInserted.getStoreItem(),
-      itemToBeInserted.getParentUUID()
-    );
+		StoreEnums itemInsertionState = storeManagementService.prepareStoreItemsForInsertion(
+			itemToBeInserted.getStoreItem(),
+			itemToBeInserted.getParentUUID()
+		);
 
-    if (itemInsertionState == StoreEnums.ITEM_INSERTED) {
-      return ResponseEntity
-        .status(HttpStatus.OK)
-        .body(StoreEnums.ITEM_INSERTED);
-    }
+		if (itemInsertionState == StoreEnums.ITEM_INSERTED) {
+			return ResponseEntity
+				.status(HttpStatus.OK)
+				.body(StoreEnums.ITEM_INSERTED);
+		}
 
-    return ResponseEntity
-      .status(HttpStatus.BAD_REQUEST)
-      .body(StoreEnums.ITEM_INSERTION_FAILED);
-  }
+		if (itemInsertionState == StoreEnums.ITEM_INSERTION_FAILED_PROFANITY) {
+			return ResponseEntity
+				.status(HttpStatus.OK)
+				.body(StoreEnums.ITEM_INSERTION_FAILED_PROFANITY);
+		}
 
-  @PostMapping("delete-item")
-  public ResponseEntity<StoreEnums> deleteItemFromStore(
-    @RequestBody StoreItemDeletion itemToBeDeleted
-  ) {
-    LoggingUtils.log(itemToBeDeleted.toString());
+		return ResponseEntity
+			.status(HttpStatus.BAD_REQUEST)
+			.body(StoreEnums.ITEM_INSERTION_FAILED);
+	}
 
-    UserAuthKey authKey = new UserAuthKey();
-    authKey.setAuthKey(itemToBeDeleted.getAuthKey());
+	@PostMapping("delete-item")
+	public ResponseEntity<StoreEnums> deleteItemFromStore(
+		@RequestBody StoreItemDeletion itemToBeDeleted
+	) {
+		LoggingUtils.log(itemToBeDeleted.toString());
 
-    if (!userManagementService.isAuthKeyValid(authKey)) {
-      return ResponseEntity.badRequest().body(StoreEnums.ITEM_DELETION_FAILED);
-    }
+		UserAuthKey authKey = new UserAuthKey();
+		authKey.setAuthKey(itemToBeDeleted.getAuthKey());
 
-    StoreEnums itemInsertionState = storeManagementService.deleteItem(
-      itemToBeDeleted.getStoreItemPublicId(),
-      itemToBeDeleted.getAuthKey(),
-      userManagementService
-    );
+		if (!userManagementService.isAuthKeyValid(authKey)) {
+			return ResponseEntity
+				.badRequest()
+				.body(StoreEnums.ITEM_DELETION_FAILED);
+		}
 
-    if (itemInsertionState == StoreEnums.ITEM_DELETED) {
-      return ResponseEntity.status(HttpStatus.OK).body(StoreEnums.ITEM_DELETED);
-    }
+		StoreEnums itemInsertionState = storeManagementService.deleteItem(
+			itemToBeDeleted.getStoreItemPublicId(),
+			itemToBeDeleted.getAuthKey(),
+			userManagementService
+		);
 
-    return ResponseEntity
-      .status(HttpStatus.BAD_REQUEST)
-      .body(StoreEnums.ITEM_DELETION_FAILED);
-  }
+		if (itemInsertionState == StoreEnums.ITEM_DELETED) {
+			return ResponseEntity
+				.status(HttpStatus.OK)
+				.body(StoreEnums.ITEM_DELETED);
+		}
 
-  @PostMapping("delete-store")
-  public ResponseEntity<StoreEnums> deleteStore(
-    @RequestBody UserAuthKey authKey
-  ) {
-    if (!userManagementService.isAuthKeyValid(authKey)) {
-      return ResponseEntity.badRequest().body(StoreEnums.STORE_DELETION_FAILED);
-    }
+		return ResponseEntity
+			.status(HttpStatus.BAD_REQUEST)
+			.body(StoreEnums.ITEM_DELETION_FAILED);
+	}
 
-    String userOwnedStoreUUID = userManagementService.getUserOwnedStoreUUID(
-      authKey.getAuthKey()
-    );
-    StoreEnums itemInsertionState = storeManagementService.deleteStore(
-      authKey,
-      userOwnedStoreUUID
-    );
+	@PostMapping("delete-store")
+	public ResponseEntity<StoreEnums> deleteStore(
+		@RequestBody UserAuthKey authKey
+	) {
+		if (!userManagementService.isAuthKeyValid(authKey)) {
+			return ResponseEntity
+				.badRequest()
+				.body(StoreEnums.STORE_DELETION_FAILED);
+		}
 
-    if (itemInsertionState == StoreEnums.STORE_DELETION_SUCCESSFUL) {
-      return ResponseEntity
-        .status(HttpStatus.OK)
-        .body(StoreEnums.STORE_DELETION_SUCCESSFUL);
-    }
+		String userOwnedStoreUUID = userManagementService.getUserOwnedStoreUUID(
+			authKey.getAuthKey()
+		);
+		StoreEnums itemInsertionState = storeManagementService.deleteStore(
+			authKey,
+			userOwnedStoreUUID
+		);
 
-    return ResponseEntity
-      .status(HttpStatus.BAD_REQUEST)
-      .body(StoreEnums.STORE_DELETION_FAILED);
-  }
+		if (itemInsertionState == StoreEnums.STORE_DELETION_SUCCESSFUL) {
+			return ResponseEntity
+				.status(HttpStatus.OK)
+				.body(StoreEnums.STORE_DELETION_SUCCESSFUL);
+		}
+
+		return ResponseEntity
+			.status(HttpStatus.BAD_REQUEST)
+			.body(StoreEnums.STORE_DELETION_FAILED);
+	}
 }

@@ -5,12 +5,15 @@ import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import services.interfaces.CheckProfanity;
 import services.registration.UserManagementService;
+import services.resourceprocessor.ProfanityProcessorService;
 import services.storemanagement.StoreManagementService;
 import services.utils.StaticMaps;
 import services.utils.UserEnums;
@@ -74,12 +77,35 @@ public class UserAuthorisationController {
 	public ResponseEntity<UserRegistrationResponse> createNewUser(
 		@RequestBody User user
 	) {
+		// There's probably a lot here that could be refactored, and redone. This method has too many responsibilities for what it does.
 		UserRegistrationResponse userRegistrationResponse = new UserRegistrationResponse();
 		userRegistrationResponse.setUserRegistrationQueryStatus(
 			UserEnums.REGISTRATION_FAILED
 		);
-		user.setRegistrationDate(String.valueOf(LocalDate.now()));
 		List<StaticMaps.RegistrationFailureEnums> failureReasons = new ArrayList<StaticMaps.RegistrationFailureEnums>();
+
+		CheckProfanity check = (String stringToCheck) ->
+			ProfanityProcessorService.inspectString(
+				stringToCheck.toLowerCase(Locale.getDefault())
+			);
+
+		if (
+			check.call(user.getEmail()) ||
+			check.call(user.getUserName()) ||
+			check.call(user.getFirstName()) ||
+			check.call(user.getLastName())
+		) {
+			failureReasons.add(
+				StaticMaps.registrationFailures.get("profanity")
+			);
+
+			userRegistrationResponse.setUserRegistrationFailureConditions(
+				failureReasons
+			);
+			return ResponseEntity.badRequest().body(userRegistrationResponse);
+		}
+
+		user.setRegistrationDate(String.valueOf(LocalDate.now()));
 
 		if (userManagementService.userExists(user.getEmail())) {
 			userRegistrationResponse.setUserRegistrationQueryStatus(
@@ -153,6 +179,22 @@ public class UserAuthorisationController {
 	public ResponseEntity<UserEnums> updateUser(
 		@RequestBody UserUpdate userUpate
 	) {
+		CheckProfanity check = (String stringToCheck) ->
+			ProfanityProcessorService.inspectString(
+				stringToCheck.toLowerCase(Locale.getDefault())
+			);
+
+		if (
+			check.call(userUpate.getEmail()) ||
+			check.call(userUpate.getUserName()) ||
+			check.call(userUpate.getFirstName()) ||
+			check.call(userUpate.getLastName())
+		) {
+			return ResponseEntity
+				.badRequest()
+				.body(UserEnums.USER_UPDATE_FAILED_PROFANITY);
+		}
+
 		UserEnums updateUserResponse = userManagementService.updateUser(
 			userUpate
 		);

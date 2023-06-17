@@ -30,7 +30,7 @@
 
 ## OUTSTANDING TASKS
 
--   [ ] Implement language filter in Store Name and User Name.
+-   [x] Implement language filter in Store Name and User Name, and Item Description.
 -   [ ] Explore postcode based search.
 -   [ ] Replace username and storename with @ in the beginning.
 
