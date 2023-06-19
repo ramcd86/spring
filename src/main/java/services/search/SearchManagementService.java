@@ -117,14 +117,10 @@ public class SearchManagementService {
 
 	public ArrayList<String> gatherLocalPostCodes(String postcode)
 		throws JsonMappingException, JsonProcessingException {
-		String formattedPostCode = postcode
-			.replaceAll("\\s+", "")
-			.replaceAll("[^a-zA-Z0-9]", "")
-			.toLowerCase();
-
+		String formattedPostCode = sanitizePostcode(postcode);
 		RestTemplate restTemplate = new RestTemplate();
-
 		HttpHeaders headers = new HttpHeaders();
+
 		headers.setAccept(
 			Collections.singletonList(MediaType.APPLICATION_JSON)
 		);
@@ -141,7 +137,6 @@ public class SearchManagementService {
 
 			String responseBody = response.getBody();
 			ObjectMapper objectMapper = new ObjectMapper();
-
 			ResponseObject responseObject = objectMapper.readValue(
 				responseBody,
 				ResponseObject.class
