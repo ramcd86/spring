@@ -35,6 +35,7 @@
 -   [ ] Admin suspend store endpoint.
 -   [ ] User report store endpoint.
 -   [ ] Admin list of stores to be reviewed endpoint.
+-   [ ] Admin 'Action Review' endpoint.
 
 ## OUTSTANDING TASKS
 
