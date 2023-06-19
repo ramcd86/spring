@@ -28,6 +28,14 @@
 -   [x] Summarised list endpoint.
 -   [x] Search endpoint.
 
+## Moderation
+
+-   [ ] Admin disable store endpoint.
+-   [ ] Admin disable user endpoint.
+-   [ ] Admin suspend store endpoint.
+-   [ ] User report store endpoint.
+-   [ ] Admin list of stores to be reviewed endpoint.
+
 ## OUTSTANDING TASKS
 
 -   [ ] Remove unused fields from store and user endpoints.
