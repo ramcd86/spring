@@ -26,12 +26,13 @@
 ## Search
 
 -   [x] Summarised list endpoint.
--   [ ] Search endpoint.
+-   [x] Search endpoint.
 
 ## OUTSTANDING TASKS
 
+-   [ ] Remove unused fields from store and user endpoints.
 -   [x] Implement language filter in Store Name and User Name, and Item Description.
--   [ ] Explore postcode based search.
+-   [x] Explore postcode based search.
 -   [ ] Replace username and storename with @ in the beginning.
 
 # KNOWN TODO LOCATIONS:

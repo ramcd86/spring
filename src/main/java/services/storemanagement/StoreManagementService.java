@@ -1,5 +1,6 @@
 package services.storemanagement;
 
+import com.mysql.cj.xdevapi.SqlStatement;
 import com.tradr.springboot.view.storeclasses.*;
 import com.tradr.springboot.view.userclasses.UserAuthKey;
 import java.io.ByteArrayInputStream;
@@ -226,19 +227,30 @@ public class StoreManagementService {
 	}
 
 	// @TODO NEEDS PAGINATION?
-	public StoreSummaryResponse getStoresListSummaryFromDatabase() {
+	public StoreSummaryResponse getStoresListSummaryFromDatabase(
+		String customSearchStatement
+	) {
 		// Get a summarised list of stores from the database.
 		// @TODO are we sure we want to send back the actual storeUUID in this response?
+
 		CompletableFuture<StoreSummaryResponse> storeSummaryResponseCompletableFuture = CompletableFuture.supplyAsync(() -> {
 				StoreSummaryResponse response = new StoreSummaryResponse();
 				response.setStoreSummaryQueryStatus(
 					StoreEnums.STORE_LIST_EMPTY
 				);
 				List<StoreSummary> storeSummaries = new ArrayList<StoreSummary>();
+
+				String sqlStatement =
+					"SELECT storeTitle, storeDescription, storeTheme, ownUUID, storeBanner, publicStoreId FROM stores LIMIT 0,100";
+
+				if (customSearchStatement != null) {
+					sqlStatement = customSearchStatement;
+				}
+
 				try (
 					Connection conn = DatabaseVerification.getConnection();
 					PreparedStatement statement = conn.prepareStatement(
-						"SELECT storeTitle, storeDescription, storeTheme, ownUUID, storeBanner, publicStoreId FROM stores"
+						sqlStatement
 					);
 					ResultSet rs = statement.executeQuery();
 				) {

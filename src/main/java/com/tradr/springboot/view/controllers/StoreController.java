@@ -67,7 +67,9 @@ public class StoreController {
 
 	@GetMapping("get-stores-list")
 	public ResponseEntity<StoreSummaryResponse> getStoresListSummary() {
-		StoreSummaryResponse storeSummaryResponse = storeManagementService.getStoresListSummaryFromDatabase();
+		StoreSummaryResponse storeSummaryResponse = storeManagementService.getStoresListSummaryFromDatabase(
+			null
+		);
 		return ResponseEntity.ok(storeSummaryResponse);
 	}
 
