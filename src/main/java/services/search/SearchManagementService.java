@@ -20,8 +20,11 @@ import org.springframework.web.client.RestTemplate;
 
 public class SearchManagementService {
 
-	public String search(String textSearch, String postcode, String tagList)
-		throws JsonMappingException, JsonProcessingException {
+	public String generateSearchSqlQuery(
+		String textSearch,
+		String postcode,
+		String tagList
+	) throws JsonMappingException, JsonProcessingException {
 		// Sanitise the text string, adding %'s in spaces for the LIKE query.
 		String sanitisedTextSearch = (textSearch != null)
 			? textSearch

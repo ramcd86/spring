@@ -41,7 +41,7 @@ public class SearchController {
 				.badRequest()
 				.body(storeSummaryResponseFromSearch);
 		}
-		String sqlStatement = searchManagementService.search(
+		String sqlStatement = searchManagementService.generateSearchSqlQuery(
 			textSearch,
 			postcode,
 			tagList
