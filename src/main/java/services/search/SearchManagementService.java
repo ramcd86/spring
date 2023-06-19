@@ -25,99 +25,94 @@ public class SearchManagementService {
 		String postcode,
 		String tagList
 	) throws JsonMappingException, JsonProcessingException {
-		// Sanitise the text string, adding %'s in spaces for the LIKE query.
-		String sanitisedTextSearch = (textSearch != null)
-			? textSearch
+		String sanitisedTextSearch = sanitizeTextSearch(textSearch);
+
+		List<String> localPostcodes = new ArrayList<>();
+		List<String> localTagList = createTagList(tagList);
+
+		StringBuilder sqlQuery = new StringBuilder();
+
+		if (sanitisedTextSearch.isEmpty()) {
+			sqlQuery.append("SELECT * FROM stores");
+
+			if (!localTagList.isEmpty()) {
+				String localTagsFormattedForQuery = formatTagsForQuery(
+					localTagList
+				);
+				sqlQuery.append(" WHERE ").append(localTagsFormattedForQuery);
+			}
+
+			if (!localPostcodes.isEmpty()) {
+				String andOrWhere = localTagList.isEmpty()
+					? " WHERE "
+					: " AND ";
+				String postcodesFormattedForQuery = formatPostcodesForQuery(
+					localPostcodes
+				);
+				sqlQuery.append(andOrWhere).append(postcodesFormattedForQuery);
+			}
+
+			sqlQuery.append(";");
+		} else {
+			sqlQuery
+				.append("SELECT * FROM stores WHERE storeTitle LIKE '%")
+				.append(sanitisedTextSearch)
+				.append("%'");
+
+			if (!localPostcodes.isEmpty()) {
+				String postcodesFormattedForQuery = formatPostcodesForQuery(
+					localPostcodes
+				);
+				sqlQuery
+					.append(" AND (")
+					.append(postcodesFormattedForQuery)
+					.append(")");
+			}
+
+			sqlQuery.append(";");
+		}
+
+		return sqlQuery.toString();
+	}
+
+	private String sanitizeTextSearch(String textSearch) {
+		if (textSearch != null) {
+			return textSearch
 				.replaceAll("[^a-zA-Z0-9 ]", "")
 				.replaceAll(" ", "%")
-				.toLowerCase()
-			: "";
-		ArrayList<String> localPostcodes = new ArrayList<String>();
-		ArrayList<String> localTagList = new ArrayList<String>();
+				.toLowerCase();
+		}
+		return "";
+	}
 
-		String sqlQuery = "";
-
-		// If the tag list is not null, create a new arraylist of tags.
+	private List<String> createTagList(String tagList) {
+		List<String> localTagList = new ArrayList<>();
 		if (tagList != null) {
-			String[] tagListValues = tagList.split(",");
-			localTagList = new ArrayList<>(Arrays.asList(tagListValues));
+			localTagList = Arrays.asList(tagList.split(","));
 		}
+		return localTagList;
+	}
 
-		// If the postcode is populated, use Postcode.io to get a list of surrounding postcodes to make sure we cover a decent area in the search.
-		if (postcode != null) {
-			CompletableFuture<ArrayList<String>> getPostCodesCompletableFuture = CompletableFuture.supplyAsync(() -> {
-					try {
-						return gatherLocalPostCodes(postcode);
-					} catch (JsonProcessingException e) {
-						throw new RuntimeException(e);
-					}
-				}
-			);
-			localPostcodes = getPostCodesCompletableFuture.join();
-		}
+	private String formatTagsForQuery(List<String> tagList) {
+		return tagList
+			.stream()
+			.map(s -> "FIND_IN_SET('" + s + "', craftTags) > 0")
+			.collect(Collectors.joining(" OR "));
+	}
 
-		// If the text serch is empty, assume we're going to search on tags and postcodes alone.
-		if (sanitisedTextSearch.isEmpty()) {
-			sqlQuery = "SELECT * FROM stores";
+	private String formatPostcodesForQuery(List<String> postcodes) {
+		return postcodes
+			.stream()
+			.map(s -> "FIND_IN_SET('" + sanitizePostcode(s) + "', postcode) > 0"
+			)
+			.collect(Collectors.joining(" OR "));
+	}
 
-			// If the taglist isn't empty, append them to the SQL statement.
-			if (!localTagList.isEmpty()) {
-				String localTagsFormattedForQuery = localTagList
-					.stream()
-					.map(s -> "FIND_IN_SET('" + s + "', craftTags) > 0")
-					.collect(Collectors.joining(" OR "));
-				sqlQuery = sqlQuery + " WHERE " + localTagsFormattedForQuery;
-			}
-
-			// Same as above, but for postcodes. If the taglist is empty, we're just searching for postcodes.
-			if (!localPostcodes.isEmpty()) {
-				String andOrWhere = !localTagList.isEmpty()
-					? " AND "
-					: " WHERE ";
-				String postcodesFormattedForQuery = localPostcodes
-					.stream()
-					.map(s ->
-						"FIND_IN_SET('" +
-						s
-							.replaceAll("\\s+", "")
-							.replaceAll("[^a-zA-Z0-9]", "")
-							.toLowerCase() +
-						"', postcode) > 0"
-					)
-					.collect(Collectors.joining(" OR "));
-				sqlQuery = sqlQuery + andOrWhere + postcodesFormattedForQuery;
-			}
-
-			sqlQuery = sqlQuery + ";";
-		} else {
-			// If the search string isn't empty, we're going to soft search on store titles.
-			sqlQuery =
-				"SELECT * FROM stores WHERE storeTitle LIKE '%" +
-				sanitisedTextSearch +
-				"%'";
-
-			// Same as previously searching through postcodes. We don't need to worry about this handling
-			// a postcode search with an empty string because it'll default to the condition above which handles 'just postcode' searches.
-			if (!localPostcodes.isEmpty()) {
-				String postcodesFormattedForQuery = localPostcodes
-					.stream()
-					.map(s ->
-						"FIND_IN_SET('" +
-						s
-							.replaceAll("\\s+", "")
-							.replaceAll("[^a-zA-Z0-9]", "")
-							.toLowerCase() +
-						"', postcode) > 0"
-					)
-					.collect(Collectors.joining(" OR "));
-				sqlQuery =
-					sqlQuery + " AND ( " + postcodesFormattedForQuery + " )";
-			}
-
-			sqlQuery = sqlQuery + ";";
-		}
-
-		return sqlQuery;
+	private String sanitizePostcode(String postcode) {
+		return postcode
+			.replaceAll("\\s+", "")
+			.replaceAll("[^a-zA-Z0-9]", "")
+			.toLowerCase();
 	}
 
 	public ArrayList<String> gatherLocalPostCodes(String postcode)
